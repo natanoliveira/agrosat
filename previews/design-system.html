@@ -71,7 +71,7 @@ th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)
 .pair span:last-child{font:700 13px var(--sans)}
 
 /* ndvi */
-.ramp{height:28px;border-radius:6px;background:linear-gradient(90deg,#d73027 0%,#fee050 50%,#1a9850 100%);border:1px solid #0003}
+.ramp{height:28px;border-radius:6px;background:linear-gradient(90deg,#d73027 0%,#d73027 31.8%,#fee050 63.6%,#1a9850 100%);border:1px solid #0003}
 .ticks{display:flex;justify-content:space-between;font-size:12.5px;color:var(--mut);margin-top:4px}
 .stops{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:14px}
 .stop{border:1px solid var(--linha);border-radius:8px;overflow:hidden;background:#fff;font-size:12.5px}
@@ -337,20 +337,20 @@ th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)
 <!-- ============ NDVI ============ -->
 <section id="ndvi">
 <h2>Rampa NDVI</h2>
-<p class="lead">Escala contínua de −0,2 a 0,9, usada na legenda e no overlay do mapa. A fonte é <code>worker/app/render.py</code>: três paradas, interpolação linear por canal.</p>
+<p class="lead">Escala contínua de −0,2 a 0,9, usada na legenda e no overlay do mapa. A fonte é <code>worker/app/render.py</code>: quatro paradas (−0,2 e 0,15 vermelho, 0,5 amarelo, 0,9 verde), interpolação linear por canal.</p>
 <div class="box">
   <span class="lbl">Rampa oficial (vermelho → amarelo → verde)</span>
-  <div class="ramp" role="img" aria-label="Rampa NDVI de vermelho em menos 0,2, amarelo em 0,35, verde em 0,9"></div>
-  <div class="ticks num"><span>−0,2</span><span>0,35</span><span>0,9</span></div>
+  <div class="ramp" role="img" aria-label="Rampa NDVI de vermelho até 0,15, amarelo em 0,5, verde em 0,9"></div>
+  <div class="ticks num"><span>−0,2</span><span>0,15</span><span>0,5</span><span>0,9</span></div>
   <div class="stops" id="stops"></div>
   <p class="cap">Valor fora do intervalo é cortado em −0,2 / 0,9. Pixel sem dado (nuvem, sombra, fora do talhão) fica transparente no PNG e aparece como <span class="hatch"></span> hachura na legenda.</p>
 </div>
 <h3>Leitura agronômica (para o texto de apoio)</h3>
 <div class="tw"><table><tr><th>Faixa</th><th>Cor</th><th>Significado</th></tr>
-<tr><td class="num">−0,2 a 0,1</td><td>vermelho</td><td>Solo exposto, água ou área sem vegetação</td></tr>
-<tr><td class="num">0,1 a 0,35</td><td>vermelho → amarelo</td><td>Vegetação esparsa ou em estresse</td></tr>
-<tr><td class="num">0,35 a 0,6</td><td>amarelo → verde</td><td>Vegetação em desenvolvimento</td></tr>
-<tr><td class="num">0,6 a 0,9</td><td>verde</td><td>Vegetação vigorosa</td></tr></table></div>
+<tr><td class="num">−0,2 a 0,15</td><td>vermelho</td><td>Solo exposto, água ou área sem vegetação</td></tr>
+<tr><td class="num">0,15 a 0,5</td><td>vermelho → amarelo</td><td>Vegetação esparsa ou em estresse</td></tr>
+<tr><td class="num">0,5 a 0,9</td><td>amarelo → verde</td><td>Vegetação em desenvolvimento a vigorosa</td></tr>
+</table></div>
 <h3>Decisão de acessibilidade (skill dataviz)</h3>
 <ul>
   <li>A regra geral é sequencial de um só matiz. Aqui a convenção do NDVI (vermelho→verde) é mantida porque o produtor já a reconhece. Em troca, <b>nunca depender só da cor</b>: legenda numérica sempre visível, valor exato no popup do pixel, KPI numérico por data.</li>
@@ -358,7 +358,7 @@ th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)
   <li>Sem dado = hachura (padrão), nunca uma cor da rampa.</li>
   <li>Sobre o mapa, a legenda fica em painel de vidro escuro para garantir contraste do texto (≥4,5:1) com qualquer imagem.</li>
 </ul>
-<p class="cap"><span class="tag-wn">nota</span> O preview <code>analise-ndvi.html</code> desenha uma rampa de 6 paradas mais suave; o PNG real do worker usa as 3 paradas acima. Alinhar o preview ao worker quando o overlay for integrado.</p>
+<p class="cap"><span class="tag-wn">nota</span> Os previews <code>analise-ndvi.html</code> e este usam as mesmas 4 paradas do worker.</p>
 </section>
 
 <!-- ============ SEVERIDADE ============ -->
@@ -670,11 +670,11 @@ th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)
   function dev(m){b.classList.toggle('mob',m);bd.setAttribute('aria-pressed',!m);bm.setAttribute('aria-pressed',m);spy()}
   bd.onclick=function(){dev(false)};bm.onclick=function(){dev(true)};
   /* paradas da rampa (mesma interpolação do worker) */
-  var S=[-0.2,0.35,0.9],C=[[215,48,39],[254,224,80],[26,152,80]];
-  function col(v){v=Math.max(-.2,Math.min(.9,v));var k=v<=S[1]?1:2,f=(v-S[k-1])/(S[k]-S[k-1]);
+  var S=[-0.2,0.15,0.5,0.9],C=[[215,48,39],[215,48,39],[254,224,80],[26,152,80]];
+  function col(v){v=Math.max(-.2,Math.min(.9,v));var k=v<=S[1]?1:v<=S[2]?2:3,f=(v-S[k-1])/(S[k]-S[k-1]);
     return C[k-1].map(function(c,i){return Math.round(c+(C[k][i]-c)*f)})}
   var nf=function(x){return x.toFixed(2).replace('.',',').replace('-','−')};
-  $('#stops').innerHTML=[-0.2,0,0.35,0.6,0.9].map(function(v){var c=col(v);
+  $('#stops').innerHTML=[-0.2,0.15,0.5,0.7,0.9].map(function(v){var c=col(v);
     return '<div class="stop"><i style="background:rgb('+c+')"></i><div><b class="num">'+nf(v)+'</b>#'+c.map(function(x){return x.toString(16).padStart(2,'0')}).join('').toUpperCase()+'</div></div>'}).join('');
   /* timeline */
   var D=['06 mai','21 mai','05 jun','20 jun','05 jul','20 jul','04 ago','19 ago','03 set','18 set','03 out','18 out'],

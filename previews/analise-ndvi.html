@@ -336,7 +336,7 @@ ALERTS.sort((a,b)=>b.t-a.t);
 const alertAt=t=>ALERTS.filter(a=>a.t===t);
 
 /* ---------- cores ---------- */
-const RAMP=[[-.2,[120,12,20]],[.1,[200,40,30]],[.3,[240,150,40]],[.45,[245,210,70]],[.65,[130,190,70]],[.9,[20,110,45]]];
+const RAMP=[[-.2,[215,48,39]],[.15,[215,48,39]],[.5,[254,224,80]],[.9,[26,152,80]]];
 function colorAt(v){v=clamp(v,-.2,.9);for(let k=1;k<RAMP.length;k++){if(v<=RAMP[k][0]){const[a,ca]=RAMP[k-1],[b,cb]=RAMP[k],f=(v-a)/(b-a);return ca.map((c,i)=>Math.round(c+(cb[i]-c)*f))}}return RAMP.at(-1)[1]}
 const ZC=[[190,52,34],[236,178,46],[52,140,56]],ZN=['Baixo vigor','Médio vigor','Alto vigor'];
 const RAMP_CSS='linear-gradient(90deg,'+RAMP.map(([v,c])=>`rgb(${c}) ${((v+.2)/1.1*100).toFixed(1)}%`).join(',')+')';

@@ -87,6 +87,7 @@ export default function Home() {
             ) : (
               <div className="flex flex-wrap gap-4 text-sm">
                 <Link href={`/farms/${f.id}/map`} className="font-semibold text-folha underline underline-offset-4">Abrir mapa</Link>
+                <Link href={`/farms/${f.id}`} className="underline underline-offset-4">Painel</Link>
                 <button onClick={() => setEditing(f)} className="underline underline-offset-4">Editar</button>
                 <button onClick={() => setDeleting(f)} className="text-red-700 underline underline-offset-4">Excluir</button>
               </div>
