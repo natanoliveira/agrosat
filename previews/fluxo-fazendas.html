@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AgroSat - Fluxo de fazendas e talhões (preview)</title>
+<style>
+:root{--solo:#f4efe4;--tinta:#1f2a1c;--folha:#3f6b2a;--barro:#8a5a2b;--linha:#d9d0bc;--papel:#fbf8f0;--erro:#a63a20;--ouro:#b98a1e}
+*{box-sizing:border-box}
+body{margin:0;background:var(--solo);color:var(--tinta);font:15px/1.5 "Avenir Next","Trebuchet MS",system-ui,sans-serif;
+ background-image:radial-gradient(circle at 1px 1px,rgba(31,42,28,.07) 1px,transparent 0);background-size:18px 18px}
+h1,h2,h3,.serif{font-family:Georgia,Cambria,serif;font-weight:700;letter-spacing:-.01em}
+.shell{max-width:1100px;margin:0 auto;padding:20px 16px 60px}
+.top{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:12px}
+.top h1{margin:0;font-size:20px}.top small{color:var(--barro)}
+.dev button,.view-tab{font:inherit;cursor:pointer;border:1px solid var(--linha);background:var(--papel);color:var(--tinta);padding:6px 12px;border-radius:999px}
+.dev button.on,.view-tab.active{background:var(--tinta);color:var(--solo);border-color:var(--tinta)}
+.view-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:6px;align-items:center}
+.view-tabs .g{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--barro);margin:6px 4px 0 10px;width:100%}
+.view-tab{font-size:13px;padding:4px 10px}
+.caption{overflow-wrap:anywhere;margin:12px 0;padding:8px 12px;border-left:4px solid var(--folha);background:var(--papel);font-family:ui-monospace,Menlo,monospace;font-size:12.5px}
+.frame{container-type:inline-size;margin:0 auto;width:100%;max-width:100%;background:var(--solo);border:1px solid var(--tinta);border-radius:14px;overflow:hidden;box-shadow:6px 6px 0 rgba(31,42,28,.15);transition:max-width .25s}
+.frame.mobile{max-width:375px}
+.view{display:none;min-height:520px}.view.active{display:block;animation:in .3s}
+@keyframes in{from{opacity:0;transform:translateY(6px)}}
+.nav{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:12px 20px;background:var(--tinta);color:var(--solo)}
+.nav b{font-family:Georgia,serif;font-size:18px}.nav span{font-size:13px;opacity:.8}
+.page{padding:20px}
+.row{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;margin-bottom:16px}
+.row h2{margin:0;font-size:24px}
+.btn{font:inherit;cursor:pointer;border:1px solid var(--folha);background:var(--folha);color:#fff;padding:9px 16px;border-radius:8px;font-weight:600}
+.btn.sec{background:transparent;color:var(--folha)}.btn.dng{background:var(--erro);border-color:var(--erro)}
+.btn.ghost{background:transparent;border-color:var(--linha);color:var(--tinta)}
+.grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+@container(max-width:760px){.grid{grid-template-columns:repeat(2,1fr)}}
+@container(max-width:520px){.grid{grid-template-columns:1fr}.page{padding:14px}.nav{padding:10px 14px}.hide-m{display:none}}
+.card{background:var(--papel);border:1px solid var(--linha);border-radius:12px;padding:14px;position:relative}
+.card h3{margin:0 0 2px;font-size:17px}.muted{color:#5d6a56;font-size:13px}
+.farm .acts{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.farm .acts button{font:inherit;font-size:13px;padding:4px 10px;border-radius:6px;border:1px solid var(--linha);background:#fff;cursor:pointer}
+.chip{display:inline-block;font-size:11px;padding:2px 8px;border-radius:999px;background:#e3ecd9;color:var(--folha);font-weight:700}
+.chip.b{background:#efe0cc;color:var(--barro)}.chip.r{background:#f5d9d0;color:var(--erro)}.chip.o{background:#f3e6bf;color:#7a5a05}
+.state{text-align:center;padding:60px 20px}
+.state svg{width:90px;height:90px}.state h3{font-size:20px;margin:12px 0 4px}
+.alert{padding:10px 14px;border-radius:8px;margin-bottom:14px;font-size:14px}
+.alert.e{background:#f8e3dc;border:1px solid var(--erro);color:#6e2410}
+.alert.s{background:#e3ecd9;border:1px solid var(--folha);color:#2a4a1b}
+form label{display:block;font-weight:600;font-size:14px;margin:12px 0 4px}
+input,select{font:inherit;width:100%;padding:9px 11px;border:1px solid #b9ae95;border-radius:8px;background:#fff;color:var(--tinta)}
+input.bad{border-color:var(--erro);box-shadow:0 0 0 3px rgba(166,58,32,.15)}
+.err{color:var(--erro);font-size:13px;margin-top:4px}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:12px}@container(max-width:520px){.two{grid-template-columns:1fr}}
+.overlay{position:absolute;inset:0;background:rgba(31,42,28,.55);display:flex;align-items:center;justify-content:center;padding:16px}
+.modal{background:var(--papel);border-radius:14px;padding:22px;max-width:400px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,.35)}
+.modal h3{margin:0 0 6px;font-size:20px}.modal .acts{display:flex;gap:8px;justify-content:flex-end;margin-top:18px;flex-wrap:wrap}
+.rel{position:relative;min-height:520px}
+.map{position:absolute;inset:0;width:100%;height:100%}
+.tool{position:absolute;left:12px;top:12px;display:flex;flex-direction:column;gap:8px;max-width:calc(100% - 24px)}
+.pill{background:rgba(251,248,240,.95);border:1px solid var(--linha);border-radius:10px;padding:8px 12px;font-size:13px;box-shadow:0 2px 8px rgba(0,0,0,.25)}
+.bar{position:absolute;left:12px;right:12px;bottom:12px;display:flex;gap:8px;flex-wrap:wrap;justify-content:space-between;align-items:center}
+.drop{border:2px dashed var(--folha);border-radius:12px;padding:30px;text-align:center;background:var(--papel)}
+.sum{display:flex;gap:10px;flex-wrap:wrap;margin:12px 0}.sum div{flex:1;min-width:110px;background:var(--papel);border:1px solid var(--linha);border-radius:10px;padding:10px;text-align:center}
+.sum b{display:block;font-size:26px;font-family:Georgia,serif}
+.ndvi{font:700 34px Georgia,serif;color:var(--folha);line-height:1}
+.ndvi.low{color:var(--erro)}
+.trend{font-weight:700}.up{color:var(--folha)}.down{color:var(--erro)}
+.spark{width:100%;height:34px;margin-top:8px}
+.tal-h{display:flex;justify-content:space-between;align-items:start;gap:6px}
+.nodata{background:repeating-linear-gradient(45deg,#f1ebdd,#f1ebdd 8px,#ebe3d1 8px,#ebe3d1 16px);text-align:center;padding:14px 4px;border-radius:8px;margin-top:8px}
+.prose{max-width:680px}.prose h3{margin:20px 0 4px}
+a{color:var(--folha)}
+</style>
+</head>
+<body>
+<div class="shell">
+ <div class="top">
+  <div><h1>AgroSat · fluxo de fazendas e talhões</h1><small>Preview estático — dados fictícios, sem rede</small></div>
+  <div class="dev"><button class="on" onclick="dev(false,this)">Desktop</button> <button onclick="dev(true,this)">Celular 375px</button></div>
+ </div>
+ <div class="view-tabs" id="tabs"></div>
+ <div class="caption" id="cap"></div>
+ <div class="frame" id="frame">
+
+<!-- 1 LISTA -->
+<div class="view active" id="v-lista">
+ <div class="nav"><b>AgroSat</b><span>Olá, Marcos · <a href="#" style="color:#cfe3bd">Sair</a></span></div>
+ <div class="page">
+  <div class="row"><h2>Minhas fazendas</h2><button class="btn" onclick="go('form')">+ Nova fazenda</button></div>
+  <div class="grid" id="farms"></div>
+ </div>
+</div>
+
+<div class="view" id="v-vazia">
+ <div class="nav"><b>AgroSat</b><span>Olá, Marcos</span></div>
+ <div class="page"><div class="row"><h2>Minhas fazendas</h2></div>
+  <div class="state card">
+   <svg viewBox="0 0 90 90" fill="none" stroke="#3f6b2a" stroke-width="2.5"><path d="M10 70c15-10 25-10 35 0s25 10 35 0M10 52c15-10 25-10 35 0s25 10 35 0"/><circle cx="62" cy="22" r="9" stroke="#8a5a2b"/></svg>
+   <h3>Você ainda não tem fazendas</h3><p class="muted">Cadastre a primeira para desenhar talhões e acompanhar o NDVI.</p>
+   <button class="btn" onclick="go('form')">Cadastrar primeira fazenda</button>
+  </div></div>
+</div>
+
+<div class="view" id="v-erro-lista">
+ <div class="nav"><b>AgroSat</b><span>Olá, Marcos</span></div>
+ <div class="page"><div class="row"><h2>Minhas fazendas</h2></div>
+  <div class="state card" role="alert">
+   <svg viewBox="0 0 90 90" fill="none" stroke="#a63a20" stroke-width="2.5"><circle cx="45" cy="45" r="30"/><path d="M45 28v20M45 58v2"/></svg>
+   <h3>Não foi possível carregar suas fazendas</h3><p class="muted">Verifique a conexão e tente de novo.</p>
+   <button class="btn" onclick="go('lista')">Tentar novamente</button>
+  </div></div>
+</div>
+
+<!-- 2 FORM -->
+<div class="view" id="v-form">
+ <div class="nav"><b>AgroSat</b><span>Fazendas / Nova</span></div>
+ <div class="page prose"><h2>Nova fazenda</h2>
+  <form onsubmit="return false">
+   <label>Nome da fazenda</label><input value="" placeholder="Ex.: Fazenda Boa Esperança">
+   <div class="two"><div><label>Município</label><input placeholder="Ex.: Sorriso"></div><div><label>UF</label><select><option>MT</option><option>GO</option><option>MS</option></select></div></div>
+   <label>Área total aproximada (ha)</label><input inputmode="decimal" placeholder="0,0">
+   <p class="muted">Você pode desenhar ou importar os talhões depois de salvar.</p>
+   <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap"><button class="btn" onclick="go('form-ok')">Salvar fazenda</button><button class="btn ghost" onclick="go('lista')">Cancelar</button></div>
+   <p class="muted" style="margin-top:14px">Atalho de estado: <a href="#" onclick="go('form-erro');return false">simular nome duplicado</a></p>
+  </form></div>
+</div>
+
+<div class="view" id="v-form-erro">
+ <div class="nav"><b>AgroSat</b><span>Fazendas / Editar</span></div>
+ <div class="page prose"><h2>Editar fazenda</h2>
+  <div class="alert e" role="alert"><b>Já existe uma fazenda com esse nome.</b> Escolha outro nome para continuar.</div>
+  <form onsubmit="return false">
+   <label>Nome da fazenda</label><input class="bad" value="Fazenda Boa Esperança" aria-invalid="true"><div class="err">FARM_EXISTS · nome já cadastrado na sua conta</div>
+   <div class="two"><div><label>Município</label><input value="Sorriso"></div><div><label>UF</label><select><option>MT</option></select></div></div>
+   <label>Área total aproximada (ha)</label><input value="1.240,0">
+   <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap"><button class="btn" onclick="go('form-ok')">Salvar alterações</button><button class="btn ghost" onclick="go('lista')">Cancelar</button></div>
+  </form></div>
+</div>
+
+<div class="view" id="v-form-ok">
+ <div class="nav"><b>AgroSat</b><span>Fazendas</span></div>
+ <div class="page"><div class="alert s" role="status"><b>Fazenda salva com sucesso.</b> Agora desenhe ou importe os talhões.</div>
+  <div class="card" style="max-width:420px"><h3>Fazenda Boa Esperança</h3><div class="muted">Sorriso · MT · 1.240,0 ha</div>
+   <div class="acts" style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap"><button class="btn" onclick="go('mapa')">Desenhar talhão</button><button class="btn sec" onclick="go('imp-ok')">Importar GeoJSON/KML</button></div></div></div>
+</div>
+
+<!-- 3 EXCLUIR -->
+<div class="view rel" id="v-excluir">
+ <div class="page" style="opacity:.5"><div class="row"><h2>Minhas fazendas</h2></div><div class="grid" id="farms-bg"></div></div>
+ <div class="overlay"><div class="modal" role="alertdialog" aria-labelledby="dt">
+  <h3 id="dt">Excluir “Fazenda Boa Esperança”?</h3>
+  <p class="muted">Isso remove também os 4 talhões e todo o histórico de NDVI e alertas. Essa ação não pode ser desfeita.</p>
+  <div class="acts"><button class="btn ghost" onclick="go('lista')">Cancelar</button><button class="btn dng" onclick="go('lista')">Sim, excluir fazenda</button></div>
+ </div></div>
+</div>
+
+<!-- 4 MAPA -->
+<div class="view rel" id="v-mapa">
+ <svg class="map" viewBox="0 0 800 520" preserveAspectRatio="xMidYMid slice"><use href="#sat"/>
+  <polyline points="300,150 470,120 540,230" fill="none" stroke="#fff" stroke-width="3" stroke-dasharray="8 6"/>
+  <polygon points="300,150 470,120 540,230 420,330" fill="rgba(255,255,255,.12)" stroke="none"/>
+  <line x1="540" y1="230" x2="420" y2="330" stroke="#ffd45c" stroke-width="2" stroke-dasharray="3 5"/>
+  <g fill="#fff" stroke="#3f6b2a" stroke-width="3"><circle cx="300" cy="150" r="8"/><circle cx="470" cy="120" r="8"/><circle cx="540" cy="230" r="8"/></g>
+  <circle cx="420" cy="330" r="9" fill="#ffd45c" stroke="#1f2a1c" stroke-width="2"/></svg>
+ <div class="tool"><div class="pill"><b>Modo desenho</b> · Fazenda Boa Esperança<br><span class="muted">Toque no mapa para marcar os vértices. Mínimo de 3 pontos.</span></div><div class="pill">Pontos: <b>3</b> · área parcial ≈ 28,4 ha</div></div>
+ <div class="bar"><button class="btn ghost" style="background:#fbf8f0" onclick="go('lista')">✕ Sair</button><span style="display:flex;gap:8px"><button class="btn ghost" style="background:#fbf8f0">Desfazer ponto</button><button class="btn" onclick="go('mapa-ok')">Concluir talhão</button></span></div>
+</div>
+
+<div class="view rel" id="v-mapa-ok">
+ <svg class="map" viewBox="0 0 800 520" preserveAspectRatio="xMidYMid slice"><use href="#sat"/>
+  <polygon points="300,150 470,120 540,230 420,330" fill="rgba(120,200,80,.35)" stroke="#d6ff9a" stroke-width="3"/>
+  <g fill="#fff" stroke="#3f6b2a" stroke-width="2"><circle cx="300" cy="150" r="5"/><circle cx="470" cy="120" r="5"/><circle cx="540" cy="230" r="5"/><circle cx="420" cy="330" r="5"/></g>
+  <rect x="368" y="205" width="112" height="30" rx="8" fill="#1f2a1c"/><text x="424" y="226" fill="#f4efe4" text-anchor="middle" font-family="Georgia" font-size="16" font-weight="700">42,8 ha</text></svg>
+ <div class="tool"><div class="alert s" style="margin:0;max-width:340px" role="status"><b>Talhão salvo.</b> Área calculada: 42,8 ha. As cenas de satélite serão processadas em instantes.</div></div>
+ <div class="bar"><button class="btn ghost" style="background:#fbf8f0" onclick="go('mapa')">Desenhar outro</button><button class="btn" onclick="go('dash')">Ver painel da fazenda</button></div>
+</div>
+
+<!-- 5 IMPORTAR -->
+<div class="view" id="v-imp-ok">
+ <div class="nav"><b>AgroSat</b><span>Fazenda Boa Esperança / Importar</span></div>
+ <div class="page prose"><h2>Importar talhões</h2>
+  <div class="drop"><b>talhoes-2026.geojson</b><div class="muted">Arraste um arquivo .geojson ou .kml, ou <u>escolha no computador</u> · máx. 5 MB</div></div>
+  <div class="alert s" style="margin-top:14px" role="status"><b>Importação concluída.</b></div>
+  <div class="sum"><div><b style="color:var(--folha)">3</b>criados</div><div><b style="color:var(--barro)">1</b>ignorado</div></div>
+  <div class="card"><span class="chip o">Ignorado</span> <b>“Reserva Legal”</b><div class="muted">Geometria do tipo Ponto: apenas polígonos são aceitos.</div></div>
+  <div style="margin-top:14px"><button class="btn" onclick="go('dash')">Ver talhões</button> <button class="btn ghost" onclick="go('imp-erro')">Importar outro</button></div></div>
+</div>
+
+<div class="view" id="v-imp-erro">
+ <div class="nav"><b>AgroSat</b><span>Fazenda Boa Esperança / Importar</span></div>
+ <div class="page prose"><h2>Importar talhões</h2>
+  <div class="drop" style="border-color:var(--erro)"><b>mapa-final.shp.zip</b><div class="muted">Formato não suportado</div></div>
+  <div class="alert e" style="margin-top:14px" role="alert"><b>Arquivo inválido.</b> Não conseguimos ler o conteúdo. Envie um .geojson ou .kml válido, com até 5 MB.</div>
+  <button class="btn" onclick="go('imp-ok')">Escolher outro arquivo</button></div>
+</div>
+
+<!-- 6 DASH -->
+<div class="view" id="v-dash">
+ <div class="nav"><b>AgroSat</b><span>Fazendas / Boa Esperança</span></div>
+ <div class="page">
+  <div class="row"><div><h2 style="margin:0">Fazenda Boa Esperança</h2><div class="muted">Sorriso · MT · 4 talhões · 1.240,0 ha</div></div>
+   <div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn sec" onclick="go('imp-ok')">Importar</button><button class="btn" onclick="go('mapa')">+ Talhão</button></div></div>
+  <div class="grid">
+   <div class="card"><div class="tal-h"><div><h3>Talhão Norte</h3><div class="muted">42,8 ha · soja</div></div><span class="chip">Saudável</span></div>
+    <div style="margin-top:10px"><span class="ndvi">0,72</span> <span class="trend up">↑ +0,05</span><div class="muted">NDVI atual · cena de 28/10</div></div>
+    <svg class="spark" viewBox="0 0 100 30" preserveAspectRatio="none"><polyline fill="none" stroke="#3f6b2a" stroke-width="2" points="0,24 20,20 40,21 60,14 80,10 100,6"/></svg>
+    <div class="muted" style="margin-top:6px">Último alerta: <b>nenhum nos últimos 30 dias</b></div></div>
+   <div class="card"><div class="tal-h"><div><h3>Talhão Várzea</h3><div class="muted">65,1 ha · milho</div></div><span class="chip r">Atenção</span></div>
+    <div style="margin-top:10px"><span class="ndvi low">0,41</span> <span class="trend down">↓ −0,12</span><div class="muted">NDVI atual · cena de 26/10</div></div>
+    <svg class="spark" viewBox="0 0 100 30" preserveAspectRatio="none"><polyline fill="none" stroke="#a63a20" stroke-width="2" points="0,6 20,8 40,12 60,17 80,22 100,26"/></svg>
+    <div class="muted" style="margin-top:6px">Último alerta: <span class="chip r">Queda de NDVI</span> há 2 dias</div></div>
+   <div class="card"><div class="tal-h"><div><h3>Talhão Serra</h3><div class="muted">30,2 ha · soja</div></div><span class="chip o">Reprocesse</span></div>
+    <div style="margin-top:10px"><span class="ndvi">0,64</span> <span class="trend up">↑ +0,02</span><div class="muted">NDVI atual · cena de 20/10</div></div>
+    <div class="alert" style="background:#f3e6bf;border:1px solid var(--ouro);margin:10px 0 0;font-size:13px">O contorno mudou depois do último cálculo. <b>Reprocesse</b> para atualizar o NDVI.</div>
+    <button class="btn sec" style="margin-top:8px;padding:5px 12px">Reprocessar</button></div>
+   <div class="card"><div class="tal-h"><div><h3>Talhão Mata</h3><div class="muted">18,9 ha · pastagem</div></div><span class="chip b">Sem dados</span></div>
+    <div class="nodata"><b>Sem cenas válidas</b><div class="muted">Nuvens em todas as imagens dos últimos 30 dias. Tentaremos de novo na próxima passagem do satélite.</div></div>
+    <div class="muted" style="margin-top:8px">Último alerta: <b>nenhum</b></div></div>
+  </div>
+  <p class="muted" style="margin-top:18px">Dados de satélite Sentinel-2. <a href="#" onclick="go('priv');return false">Privacidade</a></p>
+ </div>
+</div>
+
+<!-- 7 PRIVACIDADE -->
+<div class="view" id="v-priv">
+ <div class="nav"><b>AgroSat</b><span><a href="#" onclick="go('lista');return false" style="color:#cfe3bd">← Voltar</a></span></div>
+ <div class="page prose"><h2>Aviso de privacidade</h2>
+  <p class="muted">Última atualização: 04/11/2026</p>
+  <h3>O que guardamos</h3><p>Seu e-mail, o nome e a localização das fazendas e os contornos dos talhões que você desenha ou importa.</p>
+  <h3>Para que usamos</h3><p>Apenas para buscar imagens de satélite, calcular o NDVI e avisar você sobre mudanças nas lavouras. Não vendemos nem compartilhamos seus dados com terceiros.</p>
+  <h3>Seus direitos (LGPD)</h3><p>Você pode corrigir ou excluir fazendas e talhões a qualquer momento. Ao excluir, o histórico associado também é apagado. Dúvidas: privacidade@agrosat.example</p>
+ </div>
+</div>
+
+ </div>
+</div>
+
+<svg width="0" height="0" style="position:absolute"><defs>
+ <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3b4a24"/><stop offset="1" stop-color="#5b5a2e"/></linearGradient>
+ <filter id="n"><feTurbulence type="fractalNoise" baseFrequency=".9" numOctaves="2" seed="4"/><feColorMatrix values="0 0 0 0 .1  0 0 0 0 .15  0 0 0 0 .08  0 0 0 .35 0"/></filter>
+ <g id="sat"><rect width="800" height="520" fill="url(#g1)"/>
+  <polygon points="0,0 260,0 200,200 0,260" fill="#4d6a2c"/><polygon points="600,0 800,0 800,200 650,160" fill="#7a6a38"/>
+  <polygon points="80,320 280,300 300,520 60,520" fill="#8a7a46"/><polygon points="560,330 800,300 800,520 600,520" fill="#3f5a2a"/>
+  <path d="M0 420C150 380 250 460 400 430S650 380 800 440" fill="none" stroke="#2f5d6e" stroke-width="22" opacity=".85"/>
+  <path d="M640 0C620 100 700 180 660 300" fill="none" stroke="#b79b6a" stroke-width="6" opacity=".7"/>
+  <rect width="800" height="520" filter="url(#n)"/></g>
+</defs></svg>
+
+<script>
+const V=[
+ ['Lista','lista','/fazendas — lista com itens (estado padrão)'],
+ ['Vazia','vazia','/fazendas — usuário sem fazendas'],
+ ['Erro ao carregar','erro-lista','/fazendas — API falhou; botão “Tentar novamente”'],
+ ['Nova fazenda','form','/fazendas/nova — formulário vazio'],
+ ['Erro FARM_EXISTS','form-erro','/fazendas/:id/editar — 409 FARM_EXISTS, nome duplicado'],
+ ['Salva','form-ok','/fazendas/:id — sucesso após salvar'],
+ ['Excluir','excluir','/fazendas — diálogo de confirmação de exclusão'],
+ ['Mapa: desenhar','mapa','/fazendas/:id/mapa — satélite em tela cheia, modo desenho (3 vértices)'],
+ ['Mapa: salvo','mapa-ok','/fazendas/:id/mapa — polígono salvo, área 42,8 ha'],
+ ['Importar: sucesso','imp-ok','/fazendas/:id/importar — 3 criados, 1 ignorado'],
+ ['Importar: erro','imp-erro','/fazendas/:id/importar — arquivo inválido'],
+ ['Dashboard','dash','/fazendas/:id — cards por talhão: NDVI, tendência, alerta, reprocesse, sem cenas válidas'],
+ ['Privacidade','priv','/privacidade — aviso de privacidade']];
+const ids=V.map(v=>v[1]);
+document.getElementById('tabs').innerHTML=V.map(v=>`<button class="view-tab" data-id="${v[1]}" onclick="go('${v[1]}')">${v[0]}</button>`).join('');
+const farmsHTML=[['Fazenda Boa Esperança','Sorriso · MT','4 talhões · 1.240,0 ha'],['Sítio Água Clara','Rio Verde · GO','2 talhões · 86,5 ha'],['Fazenda Três Barras','Dourados · MS','7 talhões · 2.310,0 ha']].map(f=>`<div class="card farm"><h3>${f[0]}</h3><div class="muted">${f[1]}</div><div style="margin-top:8px"><span class="chip">${f[2]}</span></div><div class="acts"><button onclick="go('dash')">Abrir</button><button onclick="go('form-erro')">Editar</button><button onclick="go('excluir')">Excluir</button></div></div>`).join('');
+farms.innerHTML=farmsHTML;document.getElementById('farms-bg').innerHTML=farmsHTML;
+function go(id){document.querySelectorAll('.view').forEach(v=>v.classList.toggle('active',v.id==='v-'+id));
+ document.querySelectorAll('.view-tab').forEach(t=>t.classList.toggle('active',t.dataset.id===id));
+ cap.textContent=V[ids.indexOf(id)][2];}
+function dev(m,b){frame.classList.toggle('mobile',m);document.querySelectorAll('.dev button').forEach(x=>x.classList.remove('on'));b.classList.add('on');}
+go('lista');
+</script>
+</body>
+</html>

@@ -1,0 +1,613 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AgroSat — Análise NDVI (preview)</title>
+<style>
+:root{
+  --solo:#f4efe4; --solo2:#e8e0cc; --tinta:#1f2a1c; --folha:#3f6b2a; --barro:#8a5a2b;
+  --mut:#56604f; --linha:rgba(31,42,28,.16); --alta:#a8321f; --media:#8a5a2b;
+  --glass:rgba(24,33,22,.84); --folha-cl:#a7d27a; --ease:cubic-bezier(.2,.7,.2,1);
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--solo);color:var(--tinta);font:15px/1.5 -apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;min-height:100dvh}
+.serif{font-family:Georgia,Cambria,serif}
+.num{font-variant-numeric:tabular-nums}
+button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
+button:focus-visible,select:focus-visible,input:focus-visible,[tabindex]:focus-visible{outline:3px solid #2f7de1;outline-offset:2px}
+svg.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+
+/* ---- shell do preview ---- */
+.shell{max-width:1320px;margin:0 auto;padding:20px 20px 40px}
+.shell h1{font:700 26px/1.2 Georgia,serif;margin:0 0 2px}
+.shell .sub{color:var(--mut);margin:0 0 16px}
+.bar{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:12px}
+.view-tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;max-width:100%}
+.view-tab{white-space:nowrap;border:1px solid var(--linha);background:#fff8;border-radius:999px;padding:8px 14px;min-height:44px}
+.view-tab.active{background:var(--tinta);color:var(--solo);border-color:var(--tinta)}
+.seg{display:inline-flex;border:1px solid var(--linha);border-radius:999px;overflow:hidden;background:#fff8}
+.seg button{border:0;background:none;padding:8px 16px;min-height:44px}
+.seg button.active{background:var(--folha);color:#fff}
+.caption{margin:12px 2px 0;color:var(--mut);font-size:14px}
+.caption code{background:var(--solo2);padding:2px 6px;border-radius:6px;color:var(--tinta)}
+
+/* ---- frame ---- */
+.stagewrap{display:flex;justify-content:center}
+.frame{container-type:inline-size;position:relative;width:100%;height:760px;border-radius:16px;overflow:hidden;background:#222;box-shadow:0 18px 50px -18px rgba(31,42,28,.55),0 0 0 1px var(--linha)}
+.frame.mobile{width:375px;height:812px;border-radius:34px;box-shadow:0 0 0 10px #151a13,0 24px 60px -20px rgba(0,0,0,.6)}
+.app{display:flex;height:100%;width:100%}
+.mapcol{position:relative;flex:1;min-width:0;min-height:0;background:#3b4a2c;overflow:hidden}
+canvas#cv{position:absolute;inset:0;width:100%;height:100%;cursor:crosshair;touch-action:none}
+
+/* glass chrome */
+.glass{background:var(--glass);color:var(--solo);backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(244,239,228,.14);border-radius:14px}
+.top{position:absolute;top:12px;left:12px;right:12px;display:flex;gap:8px;align-items:flex-start;justify-content:space-between;pointer-events:none;z-index:5}
+.top>*{pointer-events:auto}
+.who{padding:8px 14px;min-width:0}
+.who b{font:700 17px/1.2 Georgia,serif;display:block}
+.who span{font-size:13px;color:#d6d1c0}
+.chips{display:flex;gap:8px}
+.chip{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:0 14px;border-radius:12px;border:1px solid rgba(244,239,228,.18);background:var(--glass);color:var(--solo);backdrop-filter:blur(10px)}
+.chip[aria-pressed=true]{background:var(--folha-cl);color:var(--tinta);border-color:var(--folha-cl);font-weight:600}
+.cur{position:absolute;left:12px;top:78px;padding:10px 14px;z-index:4;display:flex;gap:12px;align-items:baseline}
+.cur .big{font:700 34px/1 Georgia,serif}
+.cur small{color:#d6d1c0;font-size:13px}
+.trend{font-weight:600}
+
+/* legenda */
+.legend{position:absolute;right:12px;bottom:140px;padding:10px 12px;z-index:4;width:196px;font-size:12.5px}
+.legend .ramp{height:12px;border-radius:6px;margin:6px 0 4px}
+.legend .tk{display:flex;justify-content:space-between;color:#d6d1c0;font-size:12px}
+.legend .nd{display:flex;align-items:center;gap:8px;margin-top:8px;color:#d6d1c0}
+.hatch{width:18px;height:12px;border-radius:3px;border:1px solid #d6d1c0;background:repeating-linear-gradient(45deg,#d6d1c066 0 3px,transparent 3px 6px)}
+.legend .zl{display:grid;gap:6px;margin-top:6px}
+.legend .zl i{display:inline-block;width:14px;height:14px;border-radius:4px;margin-right:8px;vertical-align:-2px}
+
+/* timeline */
+.tl{position:absolute;left:12px;right:12px;bottom:12px;padding:12px 14px;z-index:5;display:grid;grid-template-columns:auto 1fr;gap:6px 14px;align-items:center}
+.play{width:52px;height:52px;border-radius:50%;border:0;background:var(--folha-cl);color:var(--tinta);display:grid;place-items:center;transition:transform .15s var(--ease)}
+.play:active{transform:scale(.94)}
+.play svg{width:24px;height:24px}
+.tl .mid{min-width:0}
+.tl .row1{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
+.tl .date{font:700 22px/1.1 Georgia,serif}
+.tl .meta{font-size:13px;color:#d6d1c0}
+input[type=range]{width:100%;height:32px;margin:0;accent-color:var(--folha-cl);background:none}
+.ticks{display:flex;justify-content:space-between;padding:0 8px;margin-top:-6px;height:14px}
+.ticks i{width:2px;height:8px;background:#d6d1c066;border-radius:1px;position:relative}
+.ticks i.ta:after{content:"";position:absolute;left:-3px;top:-8px;width:8px;height:8px;border-radius:50%;background:#ff8a65}
+.ticks i.on{background:var(--folha-cl);height:12px}
+.cmpctl{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:10px}
+select,.sel{font:inherit;min-height:44px;border-radius:10px;border:1px solid var(--linha);background:#fff;color:var(--tinta);padding:0 10px;width:100%}
+.glass select{background:rgba(244,239,228,.1);color:var(--solo);border-color:rgba(244,239,228,.25)}
+.glass select option{color:var(--tinta)}
+.cmpctl label{font-size:12.5px;color:#d6d1c0;display:grid;gap:4px}
+
+/* comparar */
+.divider{position:absolute;top:0;bottom:0;width:0;z-index:3;display:none}
+.divider:before{content:"";position:absolute;left:-1.5px;top:0;bottom:0;width:3px;background:#fff;box-shadow:0 0 0 1px #0004}
+.divider button{position:absolute;left:-24px;top:50%;margin-top:-24px;width:48px;height:48px;border-radius:50%;border:3px solid #fff;background:var(--tinta);color:#fff;display:grid;place-items:center;cursor:ew-resize;touch-action:none;box-shadow:0 4px 14px #0007}
+.tag{position:absolute;top:150px;padding:6px 12px;border-radius:999px;font-weight:600;font-size:13px;z-index:4;display:none}
+.compare .divider,.compare .tag{display:block}
+.compare .cur{display:none}
+.compare .tag{top:78px}
+#tagA{left:12px}#tagB{right:12px}
+
+/* popup */
+.pop{position:absolute;z-index:6;transform:translate(-50%,calc(-100% - 14px));background:var(--solo);color:var(--tinta);border-radius:12px;padding:8px 12px;box-shadow:0 8px 24px #0006;display:none;min-width:110px;font-size:13px}
+.pop:after{content:"";position:absolute;left:50%;bottom:-6px;width:12px;height:12px;background:var(--solo);transform:translateX(-50%) rotate(45deg)}
+.pop b{font:700 18px/1.2 Georgia,serif;display:block}
+.pop button{position:absolute;top:-10px;right:-10px;width:28px;height:28px;border-radius:50%;border:0;background:var(--tinta);color:#fff;font-size:15px;line-height:1}
+.pop.nd b{color:var(--mut);font-size:16px}
+.dot{position:absolute;width:12px;height:12px;border-radius:50%;border:2px solid #fff;background:#0008;transform:translate(-50%,-50%);z-index:5;display:none;pointer-events:none}
+
+/* estado vazio */
+.empty-map{position:absolute;inset:0;display:none;place-items:center;z-index:6;padding:16px;background:rgba(20,26,18,.38)}
+.empty .empty-map{display:grid}
+.empty .tl{display:none}
+.card{background:var(--solo);color:var(--tinta);border-radius:16px;padding:22px;max-width:380px;box-shadow:0 14px 40px #0007}
+.card h2{font:700 20px/1.25 Georgia,serif;margin:8px 0}
+.card p{margin:0 0 14px;color:var(--mut)}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 16px;border-radius:12px;border:1px solid var(--tinta);background:transparent;color:var(--tinta);font-weight:600}
+.btn.pri{background:var(--folha);border-color:var(--folha);color:#fff}
+.btn.pri:hover{background:#355a23}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.full{width:100%}
+.btns{display:flex;gap:10px;flex-wrap:wrap}
+
+/* painel */
+.panel{width:392px;flex:none;background:var(--solo);color:var(--tinta);display:flex;flex-direction:column;min-height:0;border-left:1px solid var(--linha);z-index:7;position:relative}
+.handle{display:none;border:0;background:none;height:28px;width:100%;padding:0}
+.handle:after{content:"";display:block;width:44px;height:5px;border-radius:3px;background:#1f2a1c55;margin:10px auto 0}
+.ptabs{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--linha)}
+.ptab{border:0;background:none;min-height:56px;display:grid;place-items:center;gap:0;padding:6px 2px;font-size:12.5px;color:var(--mut);border-bottom:3px solid transparent}
+.ptab.on{color:var(--folha);border-bottom-color:var(--folha);font-weight:700}
+.ptab .bd{position:absolute;margin:-4px 0 0 18px;background:var(--alta);color:#fff;border-radius:10px;font-size:11px;min-width:18px;height:18px;line-height:18px;text-align:center;font-weight:700}
+.pbody{flex:1;overflow:auto;padding:16px;min-height:0}
+.pbody h3{font:700 19px/1.25 Georgia,serif;margin:0 0 4px}
+.pbody .lead{color:var(--mut);margin:0 0 14px;font-size:14px}
+.kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:14px}
+.kpi{background:#fff;border:1px solid var(--linha);border-radius:12px;padding:8px 10px}
+.kpi small{color:var(--mut);font-size:12px;display:block}
+.kpi b{font:700 21px/1.2 Georgia,serif}
+.chartbox{background:#fff;border:1px solid var(--linha);border-radius:14px;padding:10px 6px 6px}
+.chartbox svg{display:block;width:100%;height:auto}
+.leg{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12.5px;color:var(--mut);margin:10px 4px 0}
+.leg i{display:inline-block;vertical-align:middle;margin-right:6px}
+.hit{cursor:pointer;fill:transparent}.hit:hover{fill:#3f6b2a14}
+.zrow{display:grid;grid-template-columns:auto 1fr auto;gap:2px 12px;align-items:center;padding:12px;background:#fff;border:1px solid var(--linha);border-radius:12px;margin-bottom:8px}
+.zrow .sw{width:18px;height:18px;border-radius:5px;grid-row:span 2}
+.zrow .ha{font:700 20px/1 Georgia,serif;text-align:right}
+.zrow small{color:var(--mut)}
+.bar2{height:8px;border-radius:4px;background:var(--solo2);margin-top:4px;overflow:hidden;grid-column:2/4}
+.bar2 i{display:block;height:100%}
+.al{background:#fff;border:1px solid var(--linha);border-color:#8a5a2b66;border-radius:12px;padding:12px;margin-bottom:10px}
+.al.alta{border-color:#a8321f77}
+.al .h{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:4px}
+.sev{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;padding:2px 10px 2px 8px;border-radius:999px;background:#8a5a2b1f;color:var(--media)}
+.alta .sev{background:#a8321f1c;color:var(--alta)}
+.sev svg{width:15px;height:15px}
+.al .dt{color:var(--mut);font-size:13px}
+.al p{margin:0 0 10px;font-size:14px}
+.al .btn{min-height:44px;padding:0 12px;font-size:14px}
+.fil{display:flex;gap:6px;margin-bottom:12px}
+.fil button{border:1px solid var(--linha);background:#fff;border-radius:999px;min-height:44px;padding:0 14px;font-size:14px}
+.fil button.on{background:var(--tinta);color:var(--solo);border-color:var(--tinta)}
+.field{display:grid;gap:4px;margin-bottom:12px;font-size:13.5px;color:var(--mut)}
+.note{font-size:13px;color:var(--mut);margin-top:10px}
+.list{margin:0 0 14px;padding:0;list-style:none;display:grid;gap:6px;font-size:14px}
+.list li{display:flex;gap:8px;align-items:flex-start}
+.list svg{color:var(--folha);margin-top:2px}
+.status{border-radius:14px;padding:16px;border:1px solid var(--linha);background:#fff;margin-bottom:14px}
+.status.ok{border-color:#3f6b2a66;background:#3f6b2a12}
+.status.err{border-color:#a8321f66;background:#a8321f10}
+.status h4{margin:0 0 4px;font-size:16px;display:flex;gap:8px;align-items:center}
+.status.err h4{color:var(--alta)}.status.ok h4{color:var(--folha)}
+.status p{margin:0 0 12px;font-size:14px;color:var(--mut)}
+.prog{height:10px;background:var(--solo2);border-radius:5px;overflow:hidden;margin:10px 0 6px}
+.prog i{display:block;height:100%;width:40%;background:var(--folha);border-radius:5px;animation:ld 1.4s var(--ease) infinite}
+@keyframes ld{0%{transform:translateX(-100%)}100%{transform:translateX(260%)}}
+.spin{width:22px;height:22px;border-radius:50%;border:3px solid var(--solo2);border-top-color:var(--folha);animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.simul{display:flex;gap:6px;align-items:center;font-size:13px;color:var(--mut);margin-top:14px;flex-wrap:wrap}
+.simul button{border:1px dashed var(--mut);background:none;border-radius:999px;min-height:44px;padding:0 12px}
+.simul button.on{background:var(--tinta);color:var(--solo);border-style:solid}
+
+/* modal PDF */
+.modal{position:absolute;inset:0;background:rgba(15,20,14,.62);z-index:20;display:none;overflow:auto;padding:20px;justify-content:center}
+.modal.show{display:flex}
+.page{background:#fff;color:#1b1b1b;width:100%;max-width:520px;aspect-ratio:1/1.414;min-height:640px;height:max-content;padding:28px 30px;box-shadow:0 20px 60px #000a;position:relative;font-size:12.5px;line-height:1.45;align-self:flex-start;display:flex;flex-direction:column;gap:12px}
+.page h2{font:700 20px/1.2 Georgia,serif;margin:0}
+.page h5{font:700 13px Georgia,serif;margin:0 0 4px;color:var(--folha);text-transform:uppercase;letter-spacing:.06em}
+.page .hd{display:flex;justify-content:space-between;border-bottom:2px solid var(--folha);padding-bottom:8px;gap:8px}
+.page canvas{width:100%;height:auto;aspect-ratio:2/1;border-radius:6px;display:block}
+.page table{width:100%;border-collapse:collapse}
+.page td,.page th{padding:3px 6px;border-bottom:1px solid #ddd;text-align:left}
+.page td:last-child,.page th:last-child{text-align:right}
+.page .ft{margin-top:auto;color:#666;font-size:11.5px;display:flex;justify-content:space-between;border-top:1px solid #ddd;padding-top:6px}
+.page ul{margin:0;padding-left:18px}
+.closem{position:fixed;position:sticky;top:0;align-self:flex-start;margin-left:10px;width:44px;height:44px;border-radius:50%;border:0;background:var(--solo);color:var(--tinta);display:grid;place-items:center;flex:none}
+.toast{position:absolute;left:50%;top:70px;transform:translateX(-50%);background:var(--tinta);color:var(--solo);padding:10px 16px;border-radius:12px;z-index:30;font-size:14px;display:none}
+
+/* mobile = container <= 700px (e alternador "Celular") */
+@container (max-width:700px){
+  .app{flex-direction:column}
+  .panel{width:100%;border-left:0;border-radius:22px 22px 0 0;margin-top:-18px;box-shadow:0 -10px 30px #0006;height:44%}
+  .app[data-sheet=closed] .panel{height:112px}
+  .handle{display:block}
+  .who span{display:none}.who{padding:8px 12px}.who b{font-size:15px}
+  .chip{padding:0 10px}.chip .lb{display:none}
+  .cur{display:none!important}
+  .legend{top:64px;left:12px;right:12px;bottom:auto;width:auto;padding:6px 12px;display:grid;grid-template-columns:auto 1fr;gap:0 12px;align-items:center}
+  .legend b{grid-row:span 2}.legend .ramp{margin:0;height:10px}.legend .nd{display:none}.legend .zl{grid-column:2;grid-row:1/span 2;display:flex;flex-wrap:wrap;gap:4px 12px;margin:0}
+  .legend.hide-m{display:none}
+  .tl{grid-template-columns:auto 1fr;padding:10px 12px;left:8px;right:8px;bottom:26px}
+  .play{width:48px;height:48px}
+  .tl .date{font-size:18px}
+  .tag{top:112px!important}
+  .kpis{grid-template-columns:repeat(3,1fr)}
+  .pbody{padding:12px 14px}
+  .modal{padding:12px}
+  .page{min-height:0;aspect-ratio:auto}
+}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+<defs>
+<symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z" fill="currentColor"/></symbol>
+<symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14" stroke-width="3.2"/></symbol>
+<symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v18h18M7 15l4-5 3 3 5-7"/></symbol>
+<symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5zM3 13l9 5 9-5"/></symbol>
+<symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 9a6 6 0 1 1 12 0c0 6 2 7 2 8H4c0-1 2-2 2-8zM10 21h4"/></symbol>
+<symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8zM14 3v5h5M9 13h6M9 17h6"/></symbol>
+<symbol id="i-cmp" viewBox="0 0 24 24"><path d="M12 3v18M8 7 3 12l5 5M16 7l5 5-5 5"/></symbol>
+<symbol id="i-dl" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+<symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></symbol>
+<symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3 2 20h20zM12 10v5M12 18v.01"/></symbol>
+<symbol id="i-oct" viewBox="0 0 24 24"><path d="M8 2h8l6 6v8l-6 6H8l-6-6V8zM12 7v6M12 16v.01"/></symbol>
+<symbol id="i-ok" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></symbol>
+<symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18a4 4 0 0 1-.5-8A6 6 0 0 1 18 9.5 4.3 4.3 0 0 1 17.5 18zM4 4l16 16"/></symbol>
+<symbol id="i-move" viewBox="0 0 24 24"><path d="m9 7-5 5 5 5M15 7l5 5-5 5"/></symbol>
+<symbol id="i-dot" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"/></symbol>
+</defs>
+</svg>
+
+<div class="shell">
+  <h1>Análise NDVI — mapa, timeline, comparar, zonas, alertas e PDF</h1>
+  <p class="sub">Preview estático (dados sintéticos de um talhão com mancha crescente). Tudo abaixo é interativo: play, slider, divisor, clique no pixel, baixar GeoJSON e gerar PDF.</p>
+  <div class="bar">
+    <div class="view-tabs" id="vtabs" role="tablist" aria-label="Estados do fluxo"></div>
+    <div class="seg" role="group" aria-label="Dispositivo">
+      <button id="dDesk" class="active" onclick="setDev(false)">Desktop</button>
+      <button id="dMob" onclick="setDev(true)">Celular 375</button>
+    </div>
+  </div>
+  <div class="stagewrap">
+  <div class="frame" id="frame">
+    <div class="app" id="app" data-sheet="open">
+      <div class="mapcol" id="mapcol">
+        <canvas id="cv" aria-label="Mapa de satélite com camada NDVI do Talhão 3. Clique para ler o valor do pixel." role="img"></canvas>
+        <div class="dot" id="dot"></div>
+        <div class="divider" id="div"><button id="dvh" role="slider" aria-label="Divisor antes e depois" aria-valuemin="0" aria-valuemax="100" aria-valuenow="50"><svg class="i"><use href="#i-move"/></svg></button></div>
+        <div class="tag glass" id="tagA"></div><div class="tag glass" id="tagB"></div>
+        <div class="top">
+          <div class="who glass"><b>Talhão 3 · Soja</b><span>Fazenda Santa Rita · Sorriso/MT · 42,8 ha</span></div>
+          <div class="chips">
+            <button class="chip" id="bCmp" data-act="cmp" aria-pressed="false"><svg class="i"><use href="#i-cmp"/></svg><span class="lb">Comparar</span></button>
+          </div>
+        </div>
+        <div class="glass cur" id="cur" aria-live="polite"></div>
+        <div class="glass legend" id="legend"></div>
+        <div class="glass tl" id="tl"></div>
+        <div class="empty-map" id="emptyMap">
+          <div class="card" role="status">
+            <svg class="i" style="width:34px;height:34px;color:var(--barro)"><use href="#i-cloud"/></svg>
+            <h2>Sem cenas válidas no período</h2>
+            <p>As 6 cenas Sentinel-2 dos últimos 30 dias tinham mais de 60% de nuvem sobre o Talhão 3. Amplie o período para ver o histórico.</p>
+            <div class="btns"><button class="btn pri" data-act="ampliar">Ampliar para 6 meses</button><button class="btn" data-act="retry">Tentar novamente</button></div>
+          </div>
+        </div>
+        <div class="pop" id="pop" role="dialog" aria-label="Valor do pixel"></div>
+      </div>
+      <aside class="panel" id="panel" aria-label="Painel do talhão">
+        <button class="handle" data-act="sheet" aria-label="Expandir ou recolher painel"></button>
+        <div class="ptabs" role="tablist" id="ptabs"></div>
+        <div class="pbody" id="pbody"></div>
+      </aside>
+    </div>
+    <div class="modal" id="modal"><div id="pdfwrap" style="display:flex;gap:6px;width:100%;justify-content:center;align-items:flex-start"></div></div>
+    <div class="toast" id="toast" role="status"></div>
+  </div>
+  </div>
+  <div class="caption" id="cap"></div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s), clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+const MES=['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+const fd=d=>`${String(d.getDate()).padStart(2,'0')} ${MES[d.getMonth()]} ${d.getFullYear()}`;
+const nf=(x,d=2)=>x.toFixed(d).replace('.',',');
+const I=(n,c='')=>`<svg class="i ${c}" aria-hidden="true"><use href="#i-${n}"/></svg>`;
+
+/* ---------- dados sintéticos ---------- */
+const N=72,T=12,HA=42.8;
+const DATES=Array.from({length:T},(_,i)=>new Date(2026,4,6+i*15));
+const h=(x,y,s)=>{const n=Math.sin(x*127.1+y*311.7+s*74.7)*43758.5453;return n-Math.floor(n)};
+const vn=(x,y,s)=>{const xi=Math.floor(x),yi=Math.floor(y),xf=x-xi,yf=y-yi,u=xf*xf*(3-2*xf),v=yf*yf*(3-2*yf);
+  const a=h(xi,yi,s),b=h(xi+1,yi,s),c=h(xi,yi+1,s),d=h(xi+1,yi+1,s);return a+(b-a)*u+(c-a)*v+(a-b-c+d)*u*v};
+const fbm=(x,y,s)=>vn(x,y,s)*.5+vn(x*2,y*2,s+1)*.3+vn(x*4,y*4,s+2)*.2;
+const POLY=[[.08,.22],[.42,.06],[.9,.14],[.95,.62],[.7,.94],[.22,.88],[.05,.55]];
+function pip(x,y){let c=false;for(let i=0,j=POLY.length-1;i<POLY.length;j=i++){const[a,b]=POLY[i],[p,q]=POLY[j];if((b>y)!==(q>y)&&x<(p-a)*(y-b)/(q-b)+a)c=!c}return c}
+const MASK=new Uint8Array(N*N);let M=0;
+for(let j=0;j<N;j++)for(let i=0;i<N;i++){if(pip((i+.5)/N,(j+.5)/N)){MASK[j*N+i]=1;M++}}
+const HAPX=HA/M;
+const F=[],ST=[];
+for(let t=0;t<T;t++){
+  const a=new Float32Array(N*N).fill(NaN);
+  const r=t<3?0:.05+(t-3)*.037;
+  for(let j=0;j<N;j++)for(let i=0;i<N;i++){
+    if(!MASK[j*N+i])continue;const u=(i+.5)/N,v=(j+.5)/N;
+    if(t===5&&Math.hypot(u-.3,v-.42)<.17+(fbm(u*8,v*8,7)-.5)*.1)continue;
+    if(t===8&&Math.hypot(u-.6,v-.78)<.1+(fbm(u*8,v*8,8)-.5)*.06)continue;
+    let n=.74+(fbm(u*6,v*6,1)-.5)*.16+Math.sin(u*110)*.012-.004*t+(fbm(u*30,v*30,3)-.5)*.05;
+    if(r>0){const d=Math.hypot(u-.74,v-.30)+(fbm(u*9,v*9,5)-.5)*.1;n-=clamp((r-d)/.08,0,1)*(.32+.4*Math.min(1,(t-2)/6))}
+    a[j*N+i]=n;
+  }
+  F.push(a);
+  const vals=Array.from(a).filter(x=>!isNaN(x)).sort((x,y)=>x-y);
+  const q=p=>vals[Math.floor(p*(vals.length-1))];
+  ST.push({mean:vals.reduce((s,x)=>s+x,0)/vals.length,p10:q(.1),p90:q(.9),cloud:100*(1-vals.length/M),n:vals.length});
+}
+const med=a=>[...a].sort((x,y)=>x-y)[Math.floor(a.length/2)];
+/* ponytail: "mancha" conta pixels abaixo do p10 histórico sem checar contiguidade (o worker faz com rasterio.features.shapes) */
+const histP10=(()=>{const v=[0,1,2].flatMap(t=>Array.from(F[t]).filter(x=>!isNaN(x))).sort((a,b)=>a-b);return v[Math.floor(v.length*.1)]})();
+const ALERTS=[];let manchaDone=false;
+for(let t=3;t<T;t++){
+  const m=med([ST[t-1].mean,ST[t-2].mean,ST[t-3].mean]),drop=(m-ST[t].mean)/m;
+  if(drop>.15)ALERTS.push({t,type:'queda',pct:drop*100,sev:drop>.25?'alta':'media'});
+  if(!manchaDone){const c=Array.from(F[t]).filter(x=>x<histP10).length*HAPX;if(c>1){manchaDone=true;ALERTS.push({t,type:'mancha',ha:c,sev:c>4?'alta':'media'})}}
+}
+ALERTS.sort((a,b)=>b.t-a.t);
+const alertAt=t=>ALERTS.filter(a=>a.t===t);
+
+/* ---------- cores ---------- */
+const RAMP=[[-.2,[120,12,20]],[.1,[200,40,30]],[.3,[240,150,40]],[.45,[245,210,70]],[.65,[130,190,70]],[.9,[20,110,45]]];
+function colorAt(v){v=clamp(v,-.2,.9);for(let k=1;k<RAMP.length;k++){if(v<=RAMP[k][0]){const[a,ca]=RAMP[k-1],[b,cb]=RAMP[k],f=(v-a)/(b-a);return ca.map((c,i)=>Math.round(c+(cb[i]-c)*f))}}return RAMP.at(-1)[1]}
+const ZC=[[190,52,34],[236,178,46],[52,140,56]],ZN=['Baixo vigor','Médio vigor','Alto vigor'];
+const RAMP_CSS='linear-gradient(90deg,'+RAMP.map(([v,c])=>`rgb(${c}) ${((v+.2)/1.1*100).toFixed(1)}%`).join(',')+')';
+function zonesFor(t){
+  const vals=Array.from(F[t]).filter(x=>!isNaN(x)).sort((a,b)=>a-b);
+  const q1=vals[Math.floor(vals.length*.25)],q2=vals[Math.floor(vals.length*.62)];
+  const z=new Int8Array(N*N).fill(-1),c=[0,0,0];
+  for(let k=0;k<N*N;k++){const v=F[t][k];if(isNaN(v))continue;const zi=v<q1?0:v<q2?1:2;z[k]=zi;c[zi]++}
+  return{z,ha:c.map(x=>x*HAPX),pct:c.map(x=>100*x/vals.length),q1,q2};
+}
+
+/* ---------- fundo satélite ---------- */
+const BG=document.createElement('canvas');BG.width=320;BG.height=240;
+(function(){
+  const g=BG.getContext('2d'),im=g.createImageData(320,240),P=[[150,118,72],[78,108,48],[52,82,42],[176,164,112],[128,84,58],[96,120,56]];
+  const co=Math.cos(.35),si=Math.sin(.35);
+  for(let y=0;y<240;y++)for(let x=0;x<320;x++){
+    const u=x*co+y*si,v=-x*si+y*co,cu=Math.floor(u/58),cv=Math.floor(v/46);
+    const pi=Math.floor(h(cu,cv,2)*P.length),b=P[pi],n=fbm(x/22,y/22,9),row=Math.sin((pi%2?u:v)*1.6)*7;
+    let c=b.map(k=>k*(.78+n*.5)+row);
+    const eu=u-cu*58,ev=v-cv*46;
+    if(eu<2||ev<2)c=[188,176,146];
+    if(fbm(x/14,y/14,21)>.74)c=[28,52,30];
+    const o=(y*320+x)*4;im.data[o]=c[0];im.data[o+1]=c[1];im.data[o+2]=c[2];im.data[o+3]=255;
+  }
+  g.putImageData(im,0,0);
+})();
+const OV=document.createElement('canvas');OV.width=OV.height=N;
+
+/* ---------- estado ---------- */
+const S={mode:'map',tab:'serie',t:T-1,a:1,b:T-1,div:.5,playing:false,rep:'idle',sim:'ok',empty:false,zDate:T-1,sheet:'open',pdf:false,filter:'todas',pop:null};
+let timer=null,repTimer=null;
+const cv=$('#cv'),ctx=cv.getContext('2d');
+
+function rectFor(W,H){const top=W<520?112:70,bot=W<520?140:158,s=Math.max(120,Math.min(W-(W<520?36:90),H-top-bot,600));return{x:(W-s)/2,y:top+(H-top-bot-s)/2,s}}
+function paintOv(t,zone){
+  const g=OV.getContext('2d'),im=g.createImageData(N,N);let Z=zone?zonesFor(t).z:null;
+  for(let k=0;k<N*N;k++){
+    if(!MASK[k])continue;const v=F[t][k],o=k*4;
+    if(isNaN(v)){im.data[o]=im.data[o+1]=im.data[o+2]=235;im.data[o+3]=(k%N+Math.floor(k/N))%4<2?120:40;continue}
+    const c=zone?ZC[Z[k]]:colorAt(v);im.data[o]=c[0];im.data[o+1]=c[1];im.data[o+2]=c[2];im.data[o+3]=zone?200:196;
+  }
+  g.putImageData(im,0,0);return OV;
+}
+function polyPath(g,r){g.beginPath();POLY.forEach(([u,v],i)=>g[i?'lineTo':'moveTo'](r.x+u*r.s,r.y+v*r.s));g.closePath()}
+function drawOv(g,r,t,zone,x0,x1,H){
+  g.save();g.beginPath();g.rect(x0,0,x1-x0,H);g.clip();polyPath(g,r);g.clip();
+  g.imageSmoothingEnabled=!zone;g.drawImage(paintOv(t,zone),r.x,r.y,r.s,r.s);g.restore();
+}
+function scene(g,W,H,r,o){
+  g.imageSmoothingEnabled=true;
+  const sc=Math.max(W/320,H/240);g.drawImage(BG,(W-320*sc)/2,(H-240*sc)/2,320*sc,240*sc);
+  g.fillStyle='rgba(10,14,8,.18)';g.fillRect(0,0,W,H);
+  if(!o.empty){
+    if(o.cmp){const dx=o.div*W;drawOv(g,r,o.b,false,dx,W,H);drawOv(g,r,o.a,false,0,dx,H)}
+    else drawOv(g,r,o.t,o.zone,0,W,H);
+  }
+  g.save();polyPath(g,r);g.lineWidth=o.empty?2:2.5;g.strokeStyle='#fff';g.shadowColor='rgba(0,0,0,.6)';g.shadowBlur=8;if(o.empty)g.setLineDash([8,6]);g.stroke();g.restore();
+}
+function draw(){
+  const W=cv.clientWidth,H=cv.clientHeight,d=devicePixelRatio||1;
+  if(cv.width!==Math.round(W*d)||cv.height!==Math.round(H*d)){cv.width=Math.round(W*d);cv.height=Math.round(H*d)}
+  ctx.setTransform(d,0,0,d,0,0);
+  scene(ctx,W,H,rectFor(W,H),{empty:S.empty,cmp:S.mode==='compare',div:S.div,a:S.a,b:S.b,t:S.tab==='zonas'?S.zDate:S.t,zone:S.tab==='zonas'});
+  const dx=S.div*W;$('#div').style.left=dx+'px';
+}
+
+/* ---------- timeline / topo ---------- */
+function renderTL(){
+  const tl=$('#tl'),opts=(sel)=>DATES.map((d,i)=>`<option value="${i}" ${i===sel?'selected':''}>${fd(d)}</option>`).join('');
+  if(S.empty){tl.innerHTML=`<div style="grid-column:1/-1;display:flex;gap:10px;align-items:center">${I('cloud')}<span>Timeline indisponível: nenhuma cena válida em 04 out – 04 nov 2026.</span></div>`;return}
+  if(S.mode==='compare'){
+    tl.innerHTML=`<div class="cmpctl"><label>Antes<select data-sel="a">${opts(S.a)}</select></label><label>Depois<select data-sel="b">${opts(S.b)}</select></label></div>`;
+    return;
+  }
+  if(S.tab==='zonas'){tl.innerHTML=`<div style="grid-column:1/-1;font-size:14px">Camada de zonas de manejo em <b>${fd(DATES[S.zDate])}</b>. Troque a data no painel.</div>`;return}
+  const st=ST[S.t];
+  tl.innerHTML=`<button class="play" data-act="play" aria-label="${S.playing?'Pausar':'Reproduzir'} animação das 12 datas">${I(S.playing?'pause':'play')}</button>
+  <div class="mid"><div class="row1"><span class="date num" id="tdate">${fd(DATES[S.t])}</span><span class="meta num">Cena ${S.t+1} de ${T} · nuvem ${nf(st.cloud,0)}%</span></div>
+  <input type="range" id="sl" min="0" max="${T-1}" step="1" value="${S.t}" aria-label="Data da cena" aria-valuetext="${fd(DATES[S.t])}">
+  <div class="ticks" aria-hidden="true">${DATES.map((_,i)=>`<i class="${i===S.t?'on':''} ${alertAt(i).length?'ta':''}"></i>`).join('')}</div></div>`;
+}
+function renderTop(){
+  const f=$('#frame');
+  $('#mapcol').classList.toggle('compare',S.mode==='compare'&&!S.empty);
+  $('#mapcol').classList.toggle('empty',S.empty);
+  const b=$('#bCmp');b.setAttribute('aria-pressed',S.mode==='compare');b.disabled=S.empty;
+  $('#tagA').textContent='Antes · '+fd(DATES[S.a]);$('#tagB').textContent='Depois · '+fd(DATES[S.b]);
+  const cur=$('#cur');
+  if(S.empty){cur.style.display='none'}else{
+    cur.style.display='';const t=S.tab==='zonas'?S.zDate:S.t,m=ST[t].mean,pm=t?ST[t-1].mean:m,dl=m-pm,fl=Math.abs(dl)<.02;
+    cur.innerHTML=`<span class="big num">${nf(m)}</span><span><small>NDVI médio</small><br><span class="trend num" style="color:${fl?'#d6d1c0':dl>0?'#a7d27a':'#ff9a80'}">${fl?'→ estável':(dl>0?'↑ +':'↓ ')+nf(dl)}</span></span>`;
+  }
+  const lg=$('#legend');lg.classList.toggle('hide-m',S.empty);lg.style.display=S.empty?'none':'';
+  lg.innerHTML=S.tab==='zonas'?`<b>Zonas de manejo</b><div class="zl">${ZC.map((c,i)=>`<span><i style="background:rgb(${c})"></i>${ZN[i]}</span>`).join('')}</div>`
+   :`<b>NDVI</b><div class="ramp" style="background:${RAMP_CSS}"></div><div class="tk num"><span>−0,2</span><span>0,3</span><span>0,9</span></div><div class="nd"><span class="hatch"></span>sem dado (nuvem/sombra)</div>`;
+}
+
+/* ---------- gráfico ---------- */
+function chartSVG(small){
+  const W=340,Hh=small?150:210,L=34,R=18,Tp=16,B=26,iw=W-L-R,ih=Hh-Tp-B,x=i=>L+iw*i/(T-1),y=v=>Tp+ih*(1-clamp(v,0,1));
+  let s=`<svg viewBox="0 0 ${W} ${Hh}" role="img" aria-label="Série temporal do NDVI médio do Talhão 3: de ${nf(ST[0].mean)} em ${fd(DATES[0])} para ${nf(ST[T-1].mean)} em ${fd(DATES[T-1])}, com ${ALERTS.length} alertas">`;
+  [0,.25,.5,.75,1].forEach(v=>s+=`<line x1="${L}" x2="${W-R}" y1="${y(v)}" y2="${y(v)}" stroke="#1f2a1c" stroke-opacity=".1"/><text x="${L-6}" y="${y(v)+4}" font-size="11" text-anchor="end" fill="#56604f" class="num">${nf(v)}</text>`);
+  s+=`<polygon points="${ST.map((q,i)=>`${x(i)},${y(q.p90)}`).join(' ')} ${ST.map((q,i)=>`${x(T-1-i)},${y(ST[T-1-i].p10)}`).join(' ')}" fill="#3f6b2a" fill-opacity=".18"/>`;
+  s+=`<polyline points="${ST.map((q,i)=>`${x(i)},${y(q.mean)}`).join(' ')}" fill="none" stroke="#3f6b2a" stroke-width="2.6" stroke-linejoin="round"/>`;
+  DATES.forEach((d,i)=>{ if(i%2===1)s+=`<text x="${x(i)}" y="${Hh-8}" font-size="10.5" text-anchor="middle" fill="#56604f">${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}</text>`});
+  if(!small)s+=`<line x1="${x(S.t)}" x2="${x(S.t)}" y1="${Tp}" y2="${Tp+ih}" stroke="#1f2a1c" stroke-dasharray="3 3"/>`;
+  ST.forEach((q,i)=>s+=`<circle cx="${x(i)}" cy="${y(q.mean)}" r="${i===S.t&&!small?6:3.2}" fill="${i===S.t&&!small?'#1f2a1c':'#fff'}" stroke="#3f6b2a" stroke-width="2"/>`);
+  ALERTS.forEach(a=>{const cx=x(a.t),cy=y(ST[a.t].mean)-16,c=a.sev==='alta'?'#a8321f':'#8a5a2b';
+    s+=`<path d="M${cx},${cy-8} l8,14 h-16z" fill="${c}" stroke="#fff" stroke-width="1.2"/><text x="${cx}" y="${cy+4}" font-size="9" font-weight="700" text-anchor="middle" fill="#fff">!</text>`});
+  if(!small)DATES.forEach((_,i)=>s+=`<rect class="hit" data-act="seek" data-i="${i}" x="${x(i)-iw/(T-1)/2}" y="${Tp}" width="${iw/(T-1)}" height="${ih+10}"><title>${fd(DATES[i])}: NDVI ${nf(ST[i].mean)}</title></rect>`);
+  return s+'</svg>';
+}
+
+/* ---------- painel ---------- */
+const TABS=[['serie','chart','Série'],['zonas','layers','Zonas'],['alertas','bell','Alertas'],['relatorio','file','Relatório']];
+function renderPanel(){
+  $('#ptabs').innerHTML=TABS.map(([k,ic,l])=>`<button class="ptab ${S.tab===k?'on':''}" role="tab" aria-selected="${S.tab===k}" data-act="tab" data-k="${k}">${I(ic)}${k==='alertas'?`<span class="bd">${ALERTS.length}</span>`:''}<span>${l}</span></button>`).join('');
+  $('#app').dataset.sheet=S.sheet;
+  const b=$('#pbody'),t=S.t,st=ST[t];
+  if(S.tab==='serie'){
+    if(S.empty){b.innerHTML=`<h3>Série temporal</h3><p class="lead">Sem pontos para exibir.</p><div class="status">${I('cloud')}<h4>Nenhuma cena válida</h4><p>O gráfico precisa de ao menos uma cena com 40% ou mais de área válida no talhão.</p><button class="btn" data-act="ampliar">Ampliar período</button></div>`;return}
+    const pm=t?ST[t-1].mean:st.mean,dl=st.mean-pm;
+    b.innerHTML=`<h3>NDVI do Talhão 3</h3><p class="lead">Média, faixa p10–p90 e alertas por data. Toque num ponto para ir à cena.</p>
+    <div class="kpis"><div class="kpi"><small>Média</small><b class="num">${nf(st.mean)}</b></div><div class="kpi"><small>p10 · p90</small><b class="num" style="font-size:15px;white-space:nowrap">${nf(st.p10)} · ${nf(st.p90)}</b></div><div class="kpi"><small>Área válida</small><b class="num">${nf(100-st.cloud,0)}%</b></div></div>
+    <div class="chartbox">${chartSVG()}</div>
+    <div class="leg"><span><i style="width:18px;height:3px;background:#3f6b2a"></i>Média</span><span><i style="width:18px;height:10px;background:#3f6b2a2e"></i>p10–p90</span><span>${I('warn')} Alerta (marcador ▲)</span><span>${Math.abs(dl)<.02?'→ estável':(dl>0?'↑':'↓')+' '+nf(Math.abs(dl))} vs. cena anterior</span></div>`;
+  }
+  if(S.tab==='zonas'){
+    const z=zonesFor(S.zDate);
+    b.innerHTML=`<h3>Zonas de manejo</h3><p class="lead">Pixels classificados por quantis (25% e 62%) do NDVI na data escolhida. Padrão: última cena válida.</p>
+    <label class="field">Data da cena<select data-sel="z">${DATES.map((d,i)=>`<option value="${i}" ${i===S.zDate?'selected':''}>${fd(d)}${i===T-1?' (última válida)':''}</option>`).join('')}</select></label>
+    ${[2,1,0].map(i=>`<div class="zrow"><span class="sw" style="background:rgb(${ZC[i]})"></span><b>${ZN[i]}</b><span class="ha num">${nf(z.ha[i],1)} ha</span><small class="num">NDVI ${i===0?'< '+nf(z.q1):i===1?nf(z.q1)+' – '+nf(z.q2):'≥ '+nf(z.q2)}</small><div class="bar2"><i style="width:${z.pct[i]}%;background:rgb(${ZC[i]})"></i></div></div>`).join('')}
+    <p class="note num">Total: ${nf(HA,1)} ha · ${DATES[S.zDate].getFullYear()}</p>
+    <button class="btn pri full" data-act="dl">${I('dl')} Baixar GeoJSON das zonas</button>
+    <p class="note">Arquivo pronto para máquina de taxa variável (EPSG:4326).</p>`;
+  }
+  if(S.tab==='alertas'){
+    const L=ALERTS.filter(a=>S.filter==='todas'||a.sev===S.filter);
+    b.innerHTML=`<h3>Alertas do talhão</h3><p class="lead">Queda &gt; 15% sobre a mediana das 3 cenas anteriores, ou mancha &gt; 1 ha abaixo do p10 histórico.</p>
+    <div class="fil" role="group" aria-label="Filtrar severidade">${[['todas','Todas'],['alta','Alta'],['media','Média']].map(([k,l])=>`<button class="${S.filter===k?'on':''}" data-act="filter" data-k="${k}" aria-pressed="${S.filter===k}">${l}</button>`).join('')}</div>
+    ${L.length?L.map(a=>`<div class="al ${a.sev}"><div class="h"><span class="sev">${I(a.sev==='alta'?'oct':'warn')}Severidade ${a.sev==='alta'?'alta':'média'}</span><span class="dt num">${fd(DATES[a.t])}</span></div>
+      <p>${a.type==='queda'?`Queda de <b class="num">${nf(a.pct,0)}%</b> no NDVI médio (${nf(ST[a.t].mean)}) frente à mediana das 3 cenas anteriores.`:`Mancha de <b class="num">${nf(a.ha,1)} ha</b> com NDVI abaixo do p10 histórico (${nf(histP10)}), porção nordeste.`}</p>
+      <button class="btn" data-act="ver" data-i="${a.t}">${I('pin')} Ver no mapa</button></div>`).join(''):`<div class="status"><h4>Nenhum alerta</h4><p>Sem alertas com esse filtro.</p></div>`}`;
+  }
+  if(S.tab==='relatorio')renderRep(b);
+}
+function renderRep(b){
+  const R=S.rep,ult=ALERTS.length?fd(DATES[ALERTS[0].t]):'—';
+  let st='';
+  if(R==='loading')st=`<div class="status" role="status" aria-live="polite"><h4><span class="spin"></span>Gerando relatório…</h4><div class="prog"><i></i></div><p>Renderizando mapa NDVI, zonas e gráfico. Costuma levar até 20 segundos.</p><button class="btn" disabled>Gerando…</button></div>`;
+  if(R==='ready')st=`<div class="status ok" role="status"><h4>${I('ok')}Relatório pronto</h4><p class="num">relatorio-talhao-3-2026-11-04.pdf · 1 página · 482 KB</p><div class="btns"><button class="btn pri" data-act="pdfdl">${I('dl')} Baixar PDF</button><button class="btn" data-act="preview">${I('file')} Ver página</button></div></div>`;
+  if(R==='error')st=`<div class="status err" role="alert"><h4>${I('oct')}Sem cena válida</h4><p>Não há cena com menos de 60% de nuvem no período selecionado, então o mapa NDVI do relatório não pode ser gerado. Amplie o período e tente de novo.</p><div class="btns"><button class="btn" data-act="ampliar">Ampliar período</button><button class="btn pri" data-act="gen">Tentar novamente</button></div></div>`;
+  b.innerHTML=`<h3>Relatório PDF do Talhão 3</h3><p class="lead">Documento de 1 página para levar a campo ou enviar ao produtor.</p>
+  <ul class="list">${['Mapa NDVI da cena mais recente','Zonas de manejo com área em ha','Gráfico histórico (média, p10–p90)','Alertas e recomendações em texto'].map(x=>`<li>${I('dot')}${x}</li>`).join('')}</ul>
+  ${st}
+  ${R==='idle'||R==='ready'?`<button class="btn pri full" data-act="gen" ${R==='ready'?'style="background:transparent;color:var(--folha)"':''}>${I('file')} ${R==='ready'?'Gerar novamente':'Gerar relatório PDF'}</button>`:''}
+  <div class="simul"><span>Simular resultado:</span><button class="${S.sim==='ok'?'on':''}" data-act="sim" data-k="ok">Sucesso</button><button class="${S.sim==='err'?'on':''}" data-act="sim" data-k="err">Sem cena válida</button></div>`;
+}
+
+/* ---------- mock PDF ---------- */
+function renderPdf(){
+  const z=zonesFor(T-1),t=T-1,first=ALERTS.length?ALERTS.at(-1):null;
+  $('#pdfwrap').innerHTML=`<div class="page" role="document" aria-label="Prévia da página do relatório">
+  <div class="hd"><div><h2>Relatório de talhão</h2><div>Fazenda Santa Rita · <b>Talhão 3</b> · Soja · ${nf(HA,1)} ha</div></div><div style="text-align:right"><b class="serif" style="color:var(--folha);font-size:17px">AgroSat</b><br>Gerado em 04 nov 2026</div></div>
+  <div><h5>Mapa NDVI · ${fd(DATES[t])}</h5><canvas id="pdfMap" width="640" height="320"></canvas></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px"><div><h5>Zonas de manejo</h5><table><tr><th>Zona</th><th>Área</th></tr>${[2,1,0].map(i=>`<tr><td><span style="display:inline-block;width:10px;height:10px;border-radius:2px;background:rgb(${ZC[i]});margin-right:6px"></span>${ZN[i]}</td><td class="num">${nf(z.ha[i],1)} ha</td></tr>`).join('')}</table></div>
+  <div><h5>Alertas</h5><ul>${ALERTS.slice(0,3).map(a=>`<li class="num">${fd(DATES[a.t])} — ${a.sev==='alta'?'alta':'média'}: ${a.type==='queda'?'queda de '+nf(a.pct,0)+'%':'mancha de '+nf(a.ha,1)+' ha'}</li>`).join('')}</ul></div></div>
+  <div><h5>Série histórica do NDVI</h5>${chartSVG(true)}</div>
+  <div><h5>Recomendações</h5><ul><li>Investigar a porção nordeste do Talhão 3: NDVI médio caiu de ${nf(ST[0].mean)} para ${nf(ST[t].mean)} desde ${fd(DATES[first?first.t:3])}.</li><li>Coletar amostras de solo e folha na zona de baixo vigor (${nf(z.ha[0],1)} ha) antes da próxima aplicação.</li><li>Usar o GeoJSON de zonas para taxa variável de insumos.</li></ul></div>
+  <div class="ft"><span>Fonte: Sentinel-2 L2A · NDVI = (B08−B04)/(B08+B04)</span><span>Página 1 de 1</span></div></div>
+  <button class="closem" data-act="closepdf" aria-label="Fechar prévia">${I('x')}</button>`;
+  const c=$('#pdfMap'),g=c.getContext('2d'),r={x:150,y:14,s:292};
+  scene(g,640,320,r,{t,zone:false});
+}
+
+/* ---------- popup do pixel ---------- */
+function showPop(ev){
+  const mc=$('#mapcol').getBoundingClientRect(),px=ev.clientX-mc.left,py=ev.clientY-mc.top,W=cv.clientWidth,H=cv.clientHeight,r=rectFor(W,H);
+  const u=(px-r.x)/r.s,v=(py-r.y)/r.s,i=Math.floor(u*N),j=Math.floor(v*N);
+  const t=S.tab==='zonas'?S.zDate:S.mode==='compare'?(px<S.div*W?S.a:S.b):S.t;
+  let val=NaN;if(u>=0&&v>=0&&u<1&&v<1&&MASK[j*N+i])val=F[t][j*N+i];
+  const pop=$('#pop'),ok=!isNaN(val)&&!S.empty;
+  pop.className='pop'+(ok?'':' nd');
+  pop.innerHTML=`<button aria-label="Fechar" data-act="closepop">×</button>${ok?`<b class="num">NDVI: ${nf(val)}</b><span class="num">${fd(DATES[t])}</span>`:`<b>sem dado</b><span>${MASK[j*N+i]&&u>=0&&u<1?'nuvem/sombra mascarada':'fora do talhão'}</span>`}`;
+  pop.style.cssText=`display:block;left:${clamp(px,70,W-70)}px;top:${py}px`;
+  const d=$('#dot');d.style.cssText=`display:block;left:${px}px;top:${py}px;background:${ok?`rgb(${colorAt(val)})`:'#0008'}`;
+}
+function closePop(){$('#pop').style.display='none';$('#dot').style.display='none'}
+
+/* ---------- ações ---------- */
+function toast(m){const t=$('#toast');t.textContent=m;t.style.display='block';clearTimeout(t._h);t._h=setTimeout(()=>t.style.display='none',2800)}
+function stop(){S.playing=false;clearInterval(timer)}
+function update(){renderTop();renderTL();renderPanel();draw();$('#modal').classList.toggle('show',S.pdf);if(S.pdf)renderPdf()}
+function setT(t){S.t=t;closePop();update()}
+function gen(){
+  clearTimeout(repTimer);S.rep='loading';update();
+  repTimer=setTimeout(()=>{S.rep=S.sim==='ok'?'ready':'error';update()},2200);
+}
+function geojson(){
+  const z=zonesFor(S.zDate),k=.0006,o=[-55.72,-12.55],feats=[0,1,2].map(i=>{
+    const cells=[];for(let n=0;n<N*N;n++)if(z.z[n]===i){const x=n%N,y=Math.floor(n/N),p=(a,b)=>[+(o[0]+a*k).toFixed(6),+(o[1]-b*k).toFixed(6)];cells.push([[p(x,y),p(x+1,y),p(x+1,y+1),p(x,y+1),p(x,y)]])}
+    return{type:'Feature',properties:{zona:['baixo','medio','alto'][i],vigor:ZN[i],area_ha:+z.ha[i].toFixed(2),data:DATES[S.zDate].toISOString().slice(0,10)},geometry:{type:'MultiPolygon',coordinates:cells}}});
+  return JSON.stringify({type:'FeatureCollection',features:feats});
+}
+document.addEventListener('click',e=>{
+  const el=e.target.closest('[data-act]');if(!el)return;const a=el.dataset.act,k=el.dataset.k,i=+el.dataset.i;
+  if(a==='tab'){S.tab=k;if(S.sheet==='closed')S.sheet='open';if(k!=='serie')stop();update()}
+  else if(a==='sheet'){S.sheet=S.sheet==='open'?'closed':'open';update();requestAnimationFrame(draw)}
+  else if(a==='play'){
+    if(S.playing){stop()}else{S.playing=true;if(S.t>=T-1)S.t=0;timer=setInterval(()=>{S.t=(S.t+1)%T;if(S.t===T-1)stop();closePop();update()},900)}
+    update();
+  }
+  else if(a==='cmp'){stop();S.mode=S.mode==='compare'?'map':'compare';if(S.mode==='compare'&&S.tab==='zonas')S.tab='serie';closePop();update()}
+  else if(a==='seek'){setT(i)}
+  else if(a==='ver'){stop();S.mode='map';S.t=i;S.tab='serie';if(innerWidth<0)0;closePop();update();toast('Mapa em '+fd(DATES[i]))}
+  else if(a==='filter'){S.filter=k;update()}
+  else if(a==='dl'){const u=URL.createObjectURL(new Blob([geojson()],{type:'application/geo+json'})),l=document.createElement('a');l.href=u;l.download=`zonas-talhao-3-${DATES[S.zDate].toISOString().slice(0,10)}.geojson`;l.click();setTimeout(()=>URL.revokeObjectURL(u),500);toast('GeoJSON das zonas baixado')}
+  else if(a==='gen'){gen()}
+  else if(a==='sim'){S.sim=k;update()}
+  else if(a==='preview'){S.pdf=true;update()}
+  else if(a==='closepdf'){S.pdf=false;update()}
+  else if(a==='pdfdl'){toast('Download iniciado (simulado)')}
+  else if(a==='ampliar'){S.empty=false;S.rep=S.rep==='error'?'idle':S.rep;update();toast('Período ampliado para 6 meses')}
+  else if(a==='retry'){toast('Buscando novas cenas… nada novo ainda')}
+  else if(a==='closepop'){closePop()}
+});
+document.addEventListener('input',e=>{
+  if(e.target.id==='sl'){stop();S.t=+e.target.value;closePop();renderTop();renderPanel();draw();$('#tdate').textContent=fd(DATES[S.t]);e.target.setAttribute('aria-valuetext',fd(DATES[S.t]));
+    document.querySelectorAll('.ticks i').forEach((x,i)=>x.classList.toggle('on',i===S.t));$('.tl .meta').textContent=`Cena ${S.t+1} de ${T} · nuvem ${nf(ST[S.t].cloud,0)}%`}
+});
+document.addEventListener('change',e=>{const s=e.target.dataset.sel;if(!s)return;S[s==='z'?'zDate':s]=+e.target.value;closePop();update()});
+document.addEventListener('keydown',e=>{if(e.key==='Escape'){if(S.pdf){S.pdf=false;update()}else closePop()}});
+cv.addEventListener('click',showPop);
+
+/* divisor arrastável */
+(function(){
+  const d=$('#dvh');let drag=false;
+  const mv=x=>{const r=$('#mapcol').getBoundingClientRect();S.div=clamp((x-r.left)/r.width,.04,.96);d.setAttribute('aria-valuenow',Math.round(S.div*100));draw()};
+  d.addEventListener('pointerdown',e=>{drag=true;d.setPointerCapture(e.pointerId);closePop()});
+  d.addEventListener('pointermove',e=>{if(drag)mv(e.clientX)});
+  d.addEventListener('pointerup',()=>drag=false);d.addEventListener('pointercancel',()=>drag=false);
+  d.addEventListener('keydown',e=>{if(e.key==='ArrowLeft'||e.key==='ArrowRight'){S.div=clamp(S.div+(e.key==='ArrowLeft'?-.04:.04),.04,.96);d.setAttribute('aria-valuenow',Math.round(S.div*100));draw()}});
+})();
+
+/* ---------- preview shell ---------- */
+const VIEWS=[
+ ['mapa','Mapa + timeline',{mode:'map',tab:'serie',empty:false,t:T-1},'/talhoes/3/ndvi — mapa satélite com overlay NDVI, legenda, série temporal e play das 12 datas. Clique no pixel para ver o valor.'],
+ ['comparar','Comparar',{mode:'compare',tab:'serie',empty:false,a:1,b:T-1,div:.5},'/talhoes/3/ndvi?comparar=2026-05-21,2026-10-18 — arraste o divisor para revelar antes/depois.'],
+ ['zonas','Zonas de manejo',{mode:'map',tab:'zonas',empty:false,zDate:T-1},'/talhoes/3/zonas?data=2026-10-18 — baixo/médio/alto vigor com área em ha, seletor de data e GeoJSON.'],
+ ['alertas','Alertas',{mode:'map',tab:'alertas',empty:false,filter:'todas'},'/talhoes/3/alertas — severidade média/alta, data e "ver no mapa".'],
+ ['rel-gerar','Relatório: gerar',{mode:'map',tab:'relatorio',rep:'idle',empty:false,pdf:false},'/talhoes/3/relatorio — estado inicial; o botão roda o fluxo real (carregando → pronto/erro conforme "Simular").'],
+ ['rel-load','Relatório: carregando',{mode:'map',tab:'relatorio',rep:'loading',empty:false,pdf:false,_hold:1},'/talhoes/3/relatorio — PDF em geração no worker (RF-28), botão desabilitado.'],
+ ['rel-ok','Relatório: pronto',{mode:'map',tab:'relatorio',rep:'ready',empty:false,pdf:false},'/talhoes/3/relatorio — PDF concluído, baixar ou ver a página.'],
+ ['rel-err','Relatório: sem cena válida',{mode:'map',tab:'relatorio',rep:'error',empty:false,pdf:false},'/talhoes/3/relatorio — erro: nenhuma cena válida no período.'],
+ ['pdf','Página do PDF',{mode:'map',tab:'relatorio',rep:'ready',empty:false,pdf:true},'relatorio-talhao-3.pdf — mock da página gerada (mapa, zonas, gráfico, alertas, recomendações).'],
+ ['vazio','Sem cenas no período',{mode:'map',tab:'serie',empty:true,pdf:false},'/talhoes/3/ndvi?periodo=30d — todas as cenas com &gt; 60% de nuvem: estado vazio com saída.']
+];
+$('#vtabs').innerHTML=VIEWS.map(([id,l])=>`<button class="view-tab" role="tab" data-v="${id}">${l}</button>`).join('');
+function show(id){
+  const v=VIEWS.find(x=>x[0]===id);stop();clearTimeout(repTimer);closePop();
+  Object.assign(S,{pdf:false,sheet:'open',t:T-1,zDate:T-1},v[2]);
+  document.querySelectorAll('.view-tab').forEach(b=>b.classList.toggle('active',b.dataset.v===id));
+  $('#cap').innerHTML=`<code>${v[3].split(' — ')[0]}</code> — ${v[3].split(' — ').slice(1).join(' — ')}`;
+  update();location.hash=id;
+}
+document.querySelectorAll('.view-tab').forEach(b=>b.onclick=()=>show(b.dataset.v));
+function setDev(m){$('#frame').classList.toggle('mobile',m);$('#dMob').classList.toggle('active',m);$('#dDesk').classList.toggle('active',!m);requestAnimationFrame(draw)}
+new ResizeObserver(draw).observe($('#mapcol'));
+show((VIEWS.find(v=>v[0]===location.hash.slice(1))||VIEWS[0])[0]);
+if(/mobile/.test(location.search))setDev(true);
+</script>
+</body>
+</html>

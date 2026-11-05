@@ -1,0 +1,12 @@
+.env
+node_modules/
+dist/
+.next/
+__pycache__/
+.venv/
+.pytest_cache/
+*.tif
+*.pdf
+playwright-report/
+test-results/
+.DS_Store

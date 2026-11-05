@@ -1,0 +1,167 @@
+generator client {
+  provider        = "prisma-client-js"
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+}
+
+enum SceneSource {
+  stac
+  fixtures
+}
+
+enum ZoneClass {
+  low
+  medium
+  high
+}
+
+enum AlertType {
+  drop
+  patch
+}
+
+enum Severity {
+  medium
+  high
+}
+
+enum JobType {
+  history
+  report
+}
+
+enum JobStatus {
+  queued
+  running
+  completed
+  failed
+}
+
+model Farm {
+  id           String   @id @default(uuid()) @db.Uuid
+  name         String   @unique
+  municipality String
+  state        String   @db.Char(2)
+  createdAt    DateTime @default(now()) @db.Timestamptz
+  updatedAt    DateTime @updatedAt @db.Timestamptz
+  plots        Plot[]
+
+  @@map("farm")
+}
+
+model Plot {
+  id             String                                   @id @default(uuid()) @db.Uuid
+  farmId         String                                   @db.Uuid
+  name           String
+  geom           Unsupported("geometry(Polygon, 4326)")
+  areaHa         Decimal                                  @db.Decimal(12, 4)
+  needsReprocess Boolean                                  @default(false)
+  createdAt      DateTime                                 @default(now()) @db.Timestamptz
+  updatedAt      DateTime                                 @updatedAt @db.Timestamptz
+  farm           Farm                                     @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  scenes         NdviScene[]
+  alerts         Alert[]
+  jobs           Job[]
+  reports        Report[]
+
+  @@index([geom], type: Gist)
+  @@index([farmId])
+  @@map("plot")
+}
+
+model NdviScene {
+  id        String      @id @default(uuid()) @db.Uuid
+  plotId    String      @db.Uuid
+  sceneDate DateTime    @db.Date
+  source    SceneSource
+  valid     Boolean
+  validPct  Decimal     @db.Decimal(5, 2)
+  mean      Float?
+  median    Float?
+  p10       Float?
+  p90       Float?
+  pngPath   String?
+  ndviPath  String?
+  bounds    Json
+  createdAt DateTime    @default(now()) @db.Timestamptz
+  updatedAt DateTime    @updatedAt @db.Timestamptz
+  plot      Plot        @relation(fields: [plotId], references: [id], onDelete: Cascade)
+  zones     Zone[]
+  alerts    Alert[]
+
+  @@unique([plotId, sceneDate])
+  @@index([plotId, sceneDate])
+  @@map("ndvi_scene")
+}
+
+model Zone {
+  id        String                                        @id @default(uuid()) @db.Uuid
+  sceneId   String                                        @db.Uuid
+  class     ZoneClass
+  geom      Unsupported("geometry(MultiPolygon, 4326)")
+  areaHa    Decimal                                       @db.Decimal(12, 4)
+  createdAt DateTime                                      @default(now()) @db.Timestamptz
+  updatedAt DateTime                                      @updatedAt @db.Timestamptz
+  scene     NdviScene                                     @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+
+  @@unique([sceneId, class])
+  @@index([geom], type: Gist)
+  @@map("zone")
+}
+
+model Alert {
+  id         String                                   @id @default(uuid()) @db.Uuid
+  plotId     String                                   @db.Uuid
+  sceneId    String                                   @db.Uuid
+  sceneDate  DateTime                                 @db.Date
+  type       AlertType
+  severity   Severity
+  value      Float
+  geom       Unsupported("geometry(Geometry, 4326)")?
+  notifiedAt DateTime?                                @db.Timestamptz
+  createdAt  DateTime                                 @default(now()) @db.Timestamptz
+  updatedAt  DateTime                                 @updatedAt @db.Timestamptz
+  plot       Plot                                     @relation(fields: [plotId], references: [id], onDelete: Cascade)
+  scene      NdviScene                                @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+
+  @@unique([plotId, sceneDate, type])
+  @@index([plotId, sceneDate(sort: Desc)])
+  @@map("alert")
+}
+
+model Job {
+  id           String    @id
+  type         JobType
+  plotId       String    @db.Uuid
+  status       JobStatus @default(queued)
+  errorCode    String?
+  errorMessage String?
+  result       Json?
+  startedAt    DateTime? @db.Timestamptz
+  finishedAt   DateTime? @db.Timestamptz
+  createdAt    DateTime  @default(now()) @db.Timestamptz
+  updatedAt    DateTime  @updatedAt @db.Timestamptz
+  plot         Plot      @relation(fields: [plotId], references: [id], onDelete: Cascade)
+  reports      Report[]
+
+  @@index([plotId, status])
+  @@map("job")
+}
+
+model Report {
+  id          String   @id @default(uuid()) @db.Uuid
+  plotId      String   @db.Uuid
+  jobId       String
+  pdfPath     String
+  generatedAt DateTime @default(now()) @db.Timestamptz
+  createdAt   DateTime @default(now()) @db.Timestamptz
+  updatedAt   DateTime @updatedAt @db.Timestamptz
+  plot        Plot     @relation(fields: [plotId], references: [id], onDelete: Cascade)
+  job         Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([plotId, generatedAt(sort: Desc)])
+  @@map("report")
+}

@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AgroSat — Design System (preview)</title>
+<style>
+:root{
+  /* tokens reais: web/tailwind.config.ts */
+  --solo:#f4efe4; --tinta:#1f2a1c; --folha:#3f6b2a; --barro:#8a5a2b;
+  /* derivados usados nos componentes (analise-ndvi / fluxo-fazendas / Tailwind) */
+  --solo2:#e8e0cc; --mut:#56604f; --linha:rgba(31,42,28,.16);
+  --alta:#a8321f; --media:#8a5a2b; --erro:#b91c1c; --folha-cl:#a7d27a; --glass:rgba(24,33,22,.84);
+  --foco:#2f7de1; --ease:cubic-bezier(.2,.7,.2,1);
+  --serif:Georgia,Cambria,serif; --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;scroll-padding-top:16px}
+body{margin:0;background:#d9d2bf;color:var(--tinta);font:16px/1.55 var(--sans)}
+button,input,select{font:inherit;color:inherit}
+button{cursor:pointer;touch-action:manipulation}
+:focus-visible{outline:3px solid var(--foco);outline-offset:2px}
+.num{font-variant-numeric:tabular-nums}
+svg.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+code{font:13px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--solo2);padding:1px 6px;border-radius:4px}
+
+/* ===== moldura do preview (desktop / celular) ===== */
+.devbar{position:sticky;top:0;z-index:50;display:flex;justify-content:center;gap:10px;padding:8px;background:#1f2a1cee;color:var(--solo)}
+.seg{display:inline-flex;border:1px solid #f4efe455;border-radius:999px;overflow:hidden}
+.seg button{border:0;background:none;color:var(--solo);padding:0 18px;min-height:44px}
+.seg button[aria-pressed=true]{background:var(--folha-cl);color:var(--tinta);font-weight:700}
+.stagewrap{display:flex;justify-content:center;padding:0}
+.stage{container-type:inline-size;container-name:ds;width:100%;background:var(--solo);min-height:100vh}
+body.mob .stagewrap{padding:20px 0 40px}
+body.mob .stage{width:375px;min-height:0;border-radius:34px;box-shadow:0 0 0 10px #151a13,0 24px 60px -20px #000a;overflow:hidden}
+
+.layout{display:grid;grid-template-columns:240px minmax(0,1fr)}
+.side{position:sticky;top:60px;align-self:start;max-height:calc(100vh - 60px);overflow:auto;padding:24px 16px;border-right:1px solid var(--linha);background:var(--solo)}
+.brand{font:700 22px/1 var(--serif);color:var(--folha);display:block;margin-bottom:2px}
+.side small{color:var(--mut);display:block;margin-bottom:16px}
+.side a{display:flex;align-items:center;min-height:40px;padding:0 12px;border-radius:8px;color:var(--tinta);text-decoration:none;font-size:14.5px;border-left:3px solid transparent}
+.side a:hover{background:#3f6b2a14}
+.side a[aria-current=true]{background:#3f6b2a1f;color:var(--folha);font-weight:700;border-left-color:var(--folha)}
+.main{padding:32px clamp(16px,4cqw,48px) 64px;min-width:0;max-width:1100px}
+section{margin-bottom:64px}
+h1{font:700 clamp(30px,6cqw,44px)/1.1 var(--serif);margin:0 0 8px}
+h2{font:700 28px/1.2 var(--serif);color:var(--folha);margin:0 0 4px;padding-top:8px;border-top:2px solid var(--folha)}
+h3{font:700 18px/1.3 var(--serif);margin:28px 0 8px}
+.eyebrow{font:600 12px/1 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--barro);margin:0 0 8px}
+.lead{color:var(--mut);margin:0 0 20px;max-width:68ch}
+.grid{display:grid;gap:16px}
+.g2{grid-template-columns:repeat(2,minmax(0,1fr))}.g3{grid-template-columns:repeat(3,minmax(0,1fr))}.g4{grid-template-columns:repeat(4,minmax(0,1fr))}
+.box{background:#fffc;border:1px solid var(--linha);border-radius:8px;padding:16px;min-width:0}
+.cap{font-size:13px;color:var(--mut);margin:6px 0 0}
+.lbl{font:600 12px/1.3 var(--sans);color:var(--mut);text-transform:uppercase;letter-spacing:.08em;margin:0 0 8px;display:block}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--linha);vertical-align:top}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)}
+.tw{overflow-x:auto}
+.tag-ok,.tag-no,.tag-wn{display:inline-block;font:700 12px/1 var(--sans);padding:3px 8px;border-radius:999px;white-space:nowrap}
+.tag-ok{background:#3f6b2a1f;color:var(--folha)}.tag-wn{background:#8a5a2b1f;color:var(--barro)}.tag-no{background:#a8321f1c;color:var(--alta)}
+
+/* cores */
+.sw{border-radius:8px;border:1px solid var(--linha);overflow:hidden;background:#fff}
+.sw .c{height:84px;display:flex;align-items:flex-end;padding:8px;font:700 13px var(--sans)}
+.sw .m{padding:10px;font-size:13px}
+.sw .m b{display:block;font:700 16px var(--serif)}
+.tones{display:flex;border-radius:6px;overflow:hidden;border:1px solid var(--linha);margin-top:8px}
+.tones i{flex:1;height:26px}
+.pair{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 12px;border-radius:8px;font-size:14px;font-weight:600}
+.pair span:last-child{font:700 13px var(--sans)}
+
+/* ndvi */
+.ramp{height:28px;border-radius:6px;background:linear-gradient(90deg,#d73027 0%,#fee050 50%,#1a9850 100%);border:1px solid #0003}
+.ticks{display:flex;justify-content:space-between;font-size:12.5px;color:var(--mut);margin-top:4px}
+.stops{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:14px}
+.stop{border:1px solid var(--linha);border-radius:8px;overflow:hidden;background:#fff;font-size:12.5px}
+.stop i{display:block;height:36px}.stop div{padding:6px 8px}.stop b{display:block;font:700 15px var(--serif)}
+.hatch{display:inline-block;width:22px;height:14px;border-radius:3px;border:1px solid #56604f;background:repeating-linear-gradient(45deg,#56604f66 0 3px,transparent 3px 6px);vertical-align:-2px}
+
+/* tipografia */
+.ty{display:grid;grid-template-columns:110px 1fr;gap:4px 16px;align-items:baseline;padding:12px 0;border-bottom:1px solid var(--linha)}
+.ty small{color:var(--mut);font-size:12.5px}
+
+/* espacamento etc */
+.sp{display:flex;align-items:center;gap:12px;padding:4px 0;font-size:13px}
+.sp i{display:block;height:16px;background:var(--folha);border-radius:2px}
+.sp code{min-width:96px}
+.rad{height:72px;background:var(--folha);color:var(--solo);display:grid;place-items:center;font-weight:700;font-size:14px;border:2px solid var(--tinta)}
+.shd{height:84px;background:#fff;display:grid;place-items:center;font-size:13px;text-align:center;padding:8px;border-radius:8px}
+
+/* breakpoints */
+.bp{display:flex;gap:16px;align-items:flex-end;flex-wrap:wrap}
+.bpf{border:2px solid var(--tinta);border-radius:10px;background:#fff;padding:6px;display:grid;gap:4px;max-width:100%}
+.bpf b{display:block;background:var(--folha);opacity:.8;border-radius:3px;height:22px}
+.bpf b.l{background:var(--barro);height:60px}
+
+/* ===== componentes (réplica do Tailwind do app) ===== */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:44px;padding:0 20px;border-radius:4px;border:0;font-size:14px;font-weight:600;transition:background .15s var(--ease),box-shadow .15s var(--ease)}
+.btn.pri{background:var(--folha);color:var(--solo)}
+.btn.pri:hover,.btn.pri.h{background:#355a23}
+.btn.sec{background:transparent;color:var(--tinta);text-decoration:underline;text-underline-offset:4px;font-weight:500}
+.btn.sec:hover,.btn.sec.h{color:var(--folha)}
+.btn.out{background:transparent;border:1px solid var(--tinta);color:var(--tinta)}
+.btn.per{background:#b91c1c;color:#fff}
+.btn.per:hover,.btn.per.h{background:#991b1b}
+.btn:disabled{opacity:.6;cursor:not-allowed}
+.btn.f{outline:3px solid var(--foco);outline-offset:2px}
+.spin{width:16px;height:16px;border-radius:50%;border:2.5px solid #f4efe455;border-top-color:currentColor;animation:sp .8s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+.states{display:flex;flex-wrap:wrap;gap:12px 16px;align-items:center}
+.states figure{margin:0;display:grid;gap:4px;justify-items:start}
+.states figcaption{font-size:12px;color:var(--mut)}
+
+.fld{display:block;font-size:14px;font-weight:500}
+.inp{display:block;width:100%;margin-top:4px;min-height:44px;border-radius:4px;border:1px solid #1f2a1c4d;background:#ffffffb3;padding:8px 12px;font-weight:400}
+.inp:focus,.inp.f{border-color:var(--folha);outline:none;box-shadow:0 0 0 2px #3f6b2a4d}
+.inp.bad{border-color:#b91c1c;box-shadow:0 0 0 1px #b91c1c}
+.inp:disabled{opacity:.6;cursor:not-allowed}
+.err{margin:4px 0 0;font-size:14px;font-weight:500;color:#b91c1c;display:flex;gap:6px;align-items:center}
+
+.farm{border:1px solid #1f2a1c33;background:#ffffff80;border-radius:8px;padding:20px;display:flex;flex-direction:column;gap:14px;min-width:0}
+.farm h4{font:700 20px/1.2 var(--serif);color:var(--folha);margin:0}
+.farm .loc{font-size:14px;color:var(--barro);margin:0}
+.plot{background:#fffc;border:1px solid var(--linha);border-radius:12px;padding:14px;position:relative}
+.plot h4{margin:0 0 2px;font-size:17px}
+.plot .nv{font:700 34px/1 var(--serif);color:var(--folha)}
+.plot .nv.low{color:var(--erro)}
+.trend{font-weight:700;display:inline-flex;gap:2px;align-items:center}
+.trend.up{color:var(--folha)}.trend.down{color:#b91c1c}.trend.flat{color:var(--mut)}
+.muted{color:var(--mut);font-size:13px}
+.selo{display:inline-flex;gap:6px;align-items:center;font:700 12px/1 var(--sans);padding:5px 10px;border-radius:999px;background:#8a5a2b1f;color:var(--barro);border:1px dashed var(--barro)}
+.plot .tr{display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+
+.sev{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700;padding:3px 10px 3px 8px;border-radius:999px;background:#8a5a2b1f;color:var(--media)}
+.sev.alta{background:#a8321f1c;color:var(--alta)}
+.sev svg{width:15px;height:15px}
+
+.msg{display:flex;gap:10px;align-items:flex-start;border-radius:8px;padding:12px 14px;font-size:14px;border:1px solid}
+.msg svg{margin-top:1px}
+.msg.warn{background:#8a5a2b14;border-color:#8a5a2b66;color:#6e4620}
+.msg.erro{background:#fef2f2;border-color:#b91c1c66;color:#991b1b}
+.msg.ok{background:#3f6b2a14;border-color:#3f6b2a66;color:#2f5420}
+.msg b{display:block}
+.toast{display:inline-block;max-width:320px;border-radius:4px;padding:6px 12px;font-size:14px;box-shadow:0 1px 3px #0004,0 1px 2px #0003;color:var(--solo)}
+.toast.ok{background:var(--folha)}.toast.er{background:var(--barro)}
+
+.scrim{background:rgba(15,20,14,.62);border-radius:8px;padding:24px;display:grid;place-items:center}
+.dlg{background:var(--solo);border-radius:16px;padding:22px;max-width:360px;width:100%;box-shadow:0 14px 40px #0007}
+.dlg h4{font:700 20px/1.25 var(--serif);margin:0 0 6px}.dlg p{margin:0 0 16px;color:var(--mut);font-size:14px}
+.btns{display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-end;align-items:center}
+.inline-del{display:flex;flex-wrap:wrap;align-items:center;gap:12px;font-size:14px}
+.inline-del .btn{min-height:44px;padding:0 14px}
+
+.mapbg{position:relative;border-radius:12px;overflow:hidden;background:
+  radial-gradient(circle at 70% 30%,#c8452e 0 10%,#e8b43a 18%,transparent 30%),
+  radial-gradient(circle at 30% 60%,#2d8a46 0 30%,transparent 55%),#3b4a2c;min-height:300px;padding:12px}
+.glass{background:var(--glass);color:var(--solo);backdrop-filter:blur(10px);border:1px solid #f4efe424;border-radius:14px}
+.legend{padding:10px 12px;width:210px;font-size:12.5px}
+.legend .ramp{height:12px;margin:6px 0 4px;border:0}
+.legend .tk{display:flex;justify-content:space-between;color:#d6d1c0;font-size:12px}
+.legend .nd{display:flex;gap:8px;align-items:center;margin-top:8px;color:#d6d1c0}
+.legend .hatch{border-color:#d6d1c0;background:repeating-linear-gradient(45deg,#d6d1c066 0 3px,transparent 3px 6px)}
+.tl{display:grid;grid-template-columns:auto 1fr;gap:6px 14px;align-items:center;padding:12px 14px}
+.play{width:52px;height:52px;border-radius:50%;border:0;background:var(--folha-cl);color:var(--tinta);display:grid;place-items:center}
+.play:active{transform:scale(.94)}
+.play svg{width:24px;height:24px;fill:currentColor}
+.tl .date{font:700 22px/1.1 var(--serif)}.tl .meta{font-size:13px;color:#d6d1c0}
+.tl input[type=range]{width:100%;height:32px;margin:0;accent-color:var(--folha-cl)}
+.cmp{position:relative;height:200px;border-radius:12px;overflow:hidden;user-select:none}
+.cmp .a,.cmp .b{position:absolute;inset:0}
+.cmp .a{background:radial-gradient(circle at 70% 30%,#e8b43a 0 8%,#2d8a46 22%),#2d8a46}
+.cmp .b{background:radial-gradient(circle at 70% 30%,#c8452e 0 16%,#e8b43a 26%,#2d8a46 42%),#2d8a46;clip-path:inset(0 0 0 50%)}
+.cmp .dv{position:absolute;top:0;bottom:0;left:50%;width:3px;margin-left:-1.5px;background:#fff;box-shadow:0 0 0 1px #0004;pointer-events:none}
+.cmp .dv i{position:absolute;left:-22px;top:50%;margin-top:-24px;width:48px;height:48px;border-radius:50%;border:3px solid #fff;background:var(--tinta);color:#fff;display:grid;place-items:center;box-shadow:0 4px 14px #0007}
+.cmp input{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:ew-resize;margin:0}
+.cmp:focus-within .dv i{outline:3px solid var(--foco);outline-offset:2px}
+.cmp .tg{position:absolute;top:10px;padding:5px 12px;border-radius:999px;font-weight:600;font-size:13px}
+.sheetdemo{width:min(100%,375px);margin:0 auto;height:300px;background:#3b4a2c;border-radius:20px;position:relative;overflow:hidden}
+.sheet{position:absolute;left:0;right:0;bottom:0;height:58%;background:var(--solo);border-radius:22px 22px 0 0;box-shadow:0 -10px 30px #0006;transition:height .25s var(--ease);padding:0 16px 12px;overflow:hidden}
+.sheet.closed{height:70px}
+.handle{display:block;width:100%;height:40px;border:0;background:none;padding:0}
+.handle:after{content:"";display:block;width:44px;height:5px;border-radius:3px;background:#1f2a1c55;margin:10px auto 0}
+.pop{display:inline-block;position:relative;background:var(--solo);border-radius:12px;padding:8px 14px;box-shadow:0 8px 24px #0006;min-width:120px;font-size:13px}
+.pop:after{content:"";position:absolute;left:50%;bottom:-6px;width:12px;height:12px;background:var(--solo);transform:translateX(-50%) rotate(45deg)}
+.pop b{font:700 18px/1.2 var(--serif);display:block}
+.pop .cl{position:absolute;top:-12px;right:-12px;width:44px;height:44px;border:0;background:none;display:grid;place-items:center}
+.pop .cl span{width:26px;height:26px;border-radius:50%;background:var(--tinta);color:#fff;display:grid;place-items:center}
+.pop .cl svg{width:14px;height:14px}
+
+.al{background:#fff;border:1px solid #8a5a2b66;border-radius:12px;padding:12px;margin-bottom:10px}
+.al.alta{border-color:#a8321f77}
+.al .h{display:flex;justify-content:space-between;gap:8px;align-items:center;margin-bottom:4px}
+.al .dt{color:var(--mut);font-size:13px}.al p{margin:0 0 10px;font-size:14px}
+.up-item{display:grid;grid-template-columns:auto 1fr auto;gap:2px 12px;align-items:center;padding:12px;background:#fff;border:1px solid var(--linha);border-radius:12px;margin-bottom:8px}
+.up-item>svg{grid-row:span 2}
+.up-item .nm{font-weight:600;word-break:break-all}
+.prog{grid-column:2/4;height:8px;background:var(--solo2);border-radius:4px;overflow:hidden}
+.prog i{display:block;height:100%;background:var(--folha);border-radius:4px}
+.up-item.ok{border-color:#3f6b2a66}.up-item.er{border-color:#b91c1c66}
+.zr{display:grid;grid-template-columns:auto 1fr auto;gap:2px 12px;align-items:center;padding:12px;background:#fff;border:1px solid var(--linha);border-radius:12px;margin-bottom:8px}
+.zr .sq{width:22px;height:22px;border-radius:5px;grid-row:span 2;border:1.5px solid var(--tinta)}
+.zr .ha{font:700 20px/1 var(--serif);text-align:right}.zr small{color:var(--mut)}
+.zbar{grid-column:2/4;height:8px;border-radius:4px;background:var(--solo2);overflow:hidden}.zbar i{display:block;height:100%}
+
+.ic{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px}
+.ic div{background:#fffc;border:1px solid var(--linha);border-radius:8px;padding:12px 6px;text-align:center;font-size:12.5px;display:grid;gap:6px;justify-items:center}
+.ic svg{width:24px;height:24px}
+.arrow{font:700 22px/1 var(--sans)}
+
+.dd{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.do,.dont{background:#fffc;border-radius:8px;padding:14px 16px;border:1px solid}
+.do{border-color:#3f6b2a77}.dont{border-color:#b91c1c77}
+.do h4,.dont h4{margin:0 0 6px;font-size:14px;display:flex;gap:6px;align-items:center}
+.do h4{color:var(--folha)}.dont h4{color:#b91c1c}
+.do ul,.dont ul{margin:0;padding-left:18px;font-size:14px;display:grid;gap:4px}
+.kb{display:inline-block;border:1px solid var(--tinta);border-bottom-width:3px;border-radius:5px;padding:0 6px;font:600 12px/20px ui-monospace,Menlo,monospace;background:#fff}
+.target{display:inline-grid;place-items:center;border:2px dashed var(--barro);border-radius:8px;position:relative}
+.target i{background:var(--folha);border-radius:4px;color:var(--solo);display:grid;place-items:center;font-style:normal;font-weight:700;font-size:12px}
+.sk{position:absolute;left:8px;top:-60px;background:var(--tinta);color:var(--solo);padding:10px 14px;border-radius:0 0 8px 8px;z-index:60;text-decoration:none}
+.sk:focus{top:0}
+
+/* ===== responsivo (container query, funciona no alternador celular) ===== */
+@container ds (max-width:900px){
+  .layout{grid-template-columns:1fr}
+  .side{position:static;max-height:none;border-right:0;border-bottom:1px solid var(--linha);padding:14px 12px 6px}
+  .side nav{display:flex;gap:6px;overflow-x:auto;padding-bottom:8px}
+  .side a{white-space:nowrap;min-height:44px;border-left:0;border-bottom:3px solid transparent;border-radius:8px 8px 0 0}
+  .side a[aria-current=true]{border-bottom-color:var(--folha);border-left:0}
+  .g3,.g4{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@container ds (max-width:560px){
+  .g2,.g3,.g4,.dd{grid-template-columns:1fr}
+  .stops{grid-template-columns:repeat(2,1fr)}
+  .ty{grid-template-columns:1fr}
+  h2{font-size:24px}
+}
+@media (max-width:900px){body:not(.mob) .layout{grid-template-columns:1fr}}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important;scroll-behavior:auto!important}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+<symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4.5v15l12-7.5z" fill="currentColor"/></symbol>
+<symbol id="i-pause" viewBox="0 0 24 24"><path d="M8 5v14M16 5v14" stroke-width="3.2"/></symbol>
+<symbol id="i-chart" viewBox="0 0 24 24"><path d="M3 3v18h18M7 15l4-5 3 3 5-7"/></symbol>
+<symbol id="i-layers" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5zM3 13l9 5 9-5"/></symbol>
+<symbol id="i-bell" viewBox="0 0 24 24"><path d="M6 9a6 6 0 1 1 12 0c0 6 2 7 2 8H4c0-1 2-2 2-8zM10 21h4"/></symbol>
+<symbol id="i-file" viewBox="0 0 24 24"><path d="M14 3H6a1 1 0 0 0-1 1v16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1V8zM14 3v5h5M9 13h6M9 17h6"/></symbol>
+<symbol id="i-cmp" viewBox="0 0 24 24"><path d="M12 3v18M8 7 3 12l5 5M16 7l5 5-5 5"/></symbol>
+<symbol id="i-dl" viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></symbol>
+<symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+<symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 21s7-6.2 7-11.5A7 7 0 0 0 5 9.5C5 14.8 12 21 12 21z"/><circle cx="12" cy="9.5" r="2.5"/></symbol>
+<symbol id="i-warn" viewBox="0 0 24 24"><path d="M12 3 2 20h20zM12 10v5M12 18v.01"/></symbol>
+<symbol id="i-oct" viewBox="0 0 24 24"><path d="M8 2h8l6 6v8l-6 6H8l-6-6V8zM12 7v6M12 16v.01"/></symbol>
+<symbol id="i-ok" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="m8 12 3 3 5-6"/></symbol>
+<symbol id="i-cloud" viewBox="0 0 24 24"><path d="M7 18a4 4 0 0 1-.5-8A6 6 0 0 1 18 9.5 4.3 4.3 0 0 1 17.5 18zM4 4l16 16"/></symbol>
+<symbol id="i-move" viewBox="0 0 24 24"><path d="m9 7-5 5 5 5M15 7l5 5-5 5"/></symbol>
+<symbol id="i-check" viewBox="0 0 24 24"><path d="M5 12.5 10 17.5 19 7"/></symbol>
+</defs></svg>
+
+<a class="sk" href="#cores">Pular para o conteúdo</a>
+<div class="devbar" role="toolbar" aria-label="Alternar visualização">
+  <div class="seg">
+    <button id="bDesk" aria-pressed="true" type="button">Desktop</button>
+    <button id="bMob" aria-pressed="false" type="button">Celular 375</button>
+  </div>
+</div>
+
+<div class="stagewrap"><div class="stage" id="stage">
+<div class="layout">
+<aside class="side" aria-label="Seções">
+  <span class="brand">AgroSat</span><small>Design system · v0 (preview)</small>
+  <nav id="nav">
+    <a href="#cores">Cores</a>
+    <a href="#ndvi">Rampa NDVI</a>
+    <a href="#severidade">Severidade de alerta</a>
+    <a href="#zonas">Zonas de manejo</a>
+    <a href="#tipografia">Tipografia</a>
+    <a href="#espacamento">Espaçamento</a>
+    <a href="#raios">Raios</a>
+    <a href="#sombras">Sombras</a>
+    <a href="#grid">Grid e breakpoints</a>
+    <a href="#botoes">Botões</a>
+    <a href="#formularios">Formulários</a>
+    <a href="#cards">Cards e badges</a>
+    <a href="#feedback">Avisos e confirmação</a>
+    <a href="#mapa">Componentes do mapa</a>
+    <a href="#listas">Alertas e uploads</a>
+    <a href="#icones">Ícones e setas</a>
+    <a href="#regras">Regras de uso</a>
+    <a href="#acessibilidade">Acessibilidade</a>
+  </nav>
+</aside>
+
+<main class="main" id="conteudo">
+<p class="eyebrow">Documentação</p>
+<h1>Design system do AgroSat</h1>
+<p class="lead">Tokens e componentes extraídos de <code>web/tailwind.config.ts</code>, <code>web/app/globals.css</code>, <code>web/components</code>, <code>web/app</code> e do render do NDVI em <code>worker/app/render.py</code>. Itens marcados como <span class="tag-wn">preview</span> vêm de <code>previews/analise-ndvi.html</code> e ainda não existem no app Next.js.</p>
+
+<!-- ============ CORES ============ -->
+<section id="cores">
+<h2>Cores</h2>
+<p class="lead">Quatro tokens no Tailwind (<code>solo</code>, <code>tinta</code>, <code>folha</code>, <code>barro</code>). Os tons são variações de opacidade e neutros usados nos componentes, não novas cores.</p>
+<div class="grid g4">
+  <div class="sw"><div class="c" style="background:#f4efe4;color:#1f2a1c">solo</div><div class="m"><b>#F4EFE4</b>Fundo da página (<code>bg-solo</code>), texto sobre folha/tinta.
+    <div class="tones"><i style="background:#f4efe4"></i><i style="background:#e8e0cc"></i><i style="background:#ffffffb3;"></i><i style="background:#ffffff80"></i></div><p class="cap">solo · solo2 #E8E0CC · branco/70 · branco/50 (superfícies)</p></div></div>
+  <div class="sw"><div class="c" style="background:#1f2a1c;color:#f4efe4">tinta</div><div class="m"><b>#1F2A1C</b>Texto, bordas (<code>/15 /20 /30</code>).
+    <div class="tones"><i style="background:#1f2a1c"></i><i style="background:#1f2a1cb3"></i><i style="background:#1f2a1c4d"></i><i style="background:#1f2a1c33"></i><i style="background:#1f2a1c26"></i></div><p class="cap">100 · /70 · /30 · /20 · /15</p></div></div>
+  <div class="sw"><div class="c" style="background:#3f6b2a;color:#f4efe4">folha</div><div class="m"><b>#3F6B2A</b>Ação primária, links, foco do campo.
+    <div class="tones"><i style="background:#355a23"></i><i style="background:#3f6b2a"></i><i style="background:#a7d27a"></i><i style="background:#3f6b2a4d"></i><i style="background:#3f6b2a1f"></i></div><p class="cap">hover #355A23 · base · claro #A7D27A (sobre vidro escuro) · /30 · /12</p></div></div>
+  <div class="sw"><div class="c" style="background:#8a5a2b;color:#f4efe4">barro</div><div class="m"><b>#8A5A2B</b>Rótulos, localização, severidade média.
+    <div class="tones"><i style="background:#8a5a2b"></i><i style="background:#8a5a2b66"></i><i style="background:#8a5a2b1f"></i></div><p class="cap">base · /40 (borda) · /12 (fundo)</p></div></div>
+</div>
+<h3>Neutros e semânticas de apoio</h3>
+<div class="grid g4">
+  <div class="sw"><div class="c" style="background:#56604f;color:#fff">mudo</div><div class="m"><b>#56604F</b>Texto secundário (preview)</div></div>
+  <div class="sw"><div class="c" style="background:#b91c1c;color:#fff">erro</div><div class="m"><b>#B91C1C</b>red-700: erro, perigo, ↓</div></div>
+  <div class="sw"><div class="c" style="background:#a8321f;color:#fff">alta</div><div class="m"><b>#A8321F</b>Severidade alta (preview)</div></div>
+  <div class="sw"><div class="c" style="background:#2f7de1;color:#fff">foco</div><div class="m"><b>#2F7DE1</b>Anel de foco (preview)</div></div>
+</div>
+<h3>Contraste (WCAG 2.1, calculado)</h3>
+<div class="grid g3">
+  <div class="pair" style="background:#f4efe4;color:#1f2a1c"><span>tinta em solo</span><span>13,0:1 · AAA</span></div>
+  <div class="pair" style="background:#f4efe4;color:#3f6b2a"><span>folha em solo</span><span>5,5:1 · AA</span></div>
+  <div class="pair" style="background:#f4efe4;color:#8a5a2b"><span>barro em solo</span><span>5,1:1 · AA</span></div>
+  <div class="pair" style="background:#3f6b2a;color:#f4efe4"><span>solo em folha</span><span>5,5:1 · AA</span></div>
+  <div class="pair" style="background:#8a5a2b;color:#f4efe4"><span>solo em barro</span><span>5,1:1 · AA</span></div>
+  <div class="pair" style="background:#f4efe4;color:#56604f"><span>mudo em solo</span><span>5,8:1 · AA</span></div>
+  <div class="pair" style="background:#f4efe4;color:#a8321f"><span>alta em solo</span><span>5,8:1 · AA</span></div>
+  <div class="pair" style="background:#b91c1c;color:#fff"><span>branco em erro</span><span>6,5:1 · AA</span></div>
+  <div class="pair" style="background:#182116;color:#a7d27a"><span>folha-claro em vidro</span><span>9,6:1 · AAA</span></div>
+</div>
+<p class="cap">Texto com <code>text-tinta/70</code> sobre solo fica em ≈5,2:1 (AA). Abaixo de /70 não usar para texto. Borda de campo (<code>tinta/30</code>) é decorativa; o foco (anel folha + borda) é que identifica o campo.</p>
+</section>
+
+<!-- ============ NDVI ============ -->
+<section id="ndvi">
+<h2>Rampa NDVI</h2>
+<p class="lead">Escala contínua de −0,2 a 0,9, usada na legenda e no overlay do mapa. A fonte é <code>worker/app/render.py</code>: três paradas, interpolação linear por canal.</p>
+<div class="box">
+  <span class="lbl">Rampa oficial (vermelho → amarelo → verde)</span>
+  <div class="ramp" role="img" aria-label="Rampa NDVI de vermelho em menos 0,2, amarelo em 0,35, verde em 0,9"></div>
+  <div class="ticks num"><span>−0,2</span><span>0,35</span><span>0,9</span></div>
+  <div class="stops" id="stops"></div>
+  <p class="cap">Valor fora do intervalo é cortado em −0,2 / 0,9. Pixel sem dado (nuvem, sombra, fora do talhão) fica transparente no PNG e aparece como <span class="hatch"></span> hachura na legenda.</p>
+</div>
+<h3>Leitura agronômica (para o texto de apoio)</h3>
+<div class="tw"><table><tr><th>Faixa</th><th>Cor</th><th>Significado</th></tr>
+<tr><td class="num">−0,2 a 0,1</td><td>vermelho</td><td>Solo exposto, água ou área sem vegetação</td></tr>
+<tr><td class="num">0,1 a 0,35</td><td>vermelho → amarelo</td><td>Vegetação esparsa ou em estresse</td></tr>
+<tr><td class="num">0,35 a 0,6</td><td>amarelo → verde</td><td>Vegetação em desenvolvimento</td></tr>
+<tr><td class="num">0,6 a 0,9</td><td>verde</td><td>Vegetação vigorosa</td></tr></table></div>
+<h3>Decisão de acessibilidade (skill dataviz)</h3>
+<ul>
+  <li>A regra geral é sequencial de um só matiz. Aqui a convenção do NDVI (vermelho→verde) é mantida porque o produtor já a reconhece. Em troca, <b>nunca depender só da cor</b>: legenda numérica sempre visível, valor exato no popup do pixel, KPI numérico por data.</li>
+  <li>Vermelho e verde se confundem em daltonismo; o amarelo central e a posição na barra com números resolvem a leitura.</li>
+  <li>Sem dado = hachura (padrão), nunca uma cor da rampa.</li>
+  <li>Sobre o mapa, a legenda fica em painel de vidro escuro para garantir contraste do texto (≥4,5:1) com qualquer imagem.</li>
+</ul>
+<p class="cap"><span class="tag-wn">nota</span> O preview <code>analise-ndvi.html</code> desenha uma rampa de 6 paradas mais suave; o PNG real do worker usa as 3 paradas acima. Alinhar o preview ao worker quando o overlay for integrado.</p>
+</section>
+
+<!-- ============ SEVERIDADE ============ -->
+<section id="severidade">
+<h2>Severidade de alerta</h2>
+<p class="lead">Duas severidades. Cor sempre acompanha ícone e rótulo em texto.</p>
+<div class="grid g2">
+  <div class="box"><span class="lbl">Média</span>
+    <span class="sev"><svg class="i" aria-hidden="true"><use href="#i-warn"/></svg>Média</span>
+    <div class="tones"><i style="background:#8a5a2b"></i><i style="background:#8a5a2b66"></i><i style="background:#8a5a2b1f"></i></div>
+    <p class="cap">texto barro #8A5A2B · borda /40 · fundo /12 · ícone triângulo (<code>warn</code>) · contraste 4,6:1 sobre o fundo tingido.</p></div>
+  <div class="box"><span class="lbl">Alta</span>
+    <span class="sev alta"><svg class="i" aria-hidden="true"><use href="#i-oct"/></svg>Alta</span>
+    <div class="tones"><i style="background:#a8321f"></i><i style="background:#a8321f77"></i><i style="background:#a8321f1c"></i></div>
+    <p class="cap">texto #A8321F · borda /47 · fundo /11 · ícone octógono (<code>oct</code>), forma diferente do triângulo para não depender de cor.</p></div>
+</div>
+</section>
+
+<!-- ============ ZONAS ============ -->
+<section id="zonas">
+<h2>Zonas de manejo</h2>
+<p class="lead">Três classes ordinais de vigor, em ordem fixa baixo → médio → alto. Cores do preview <span class="tag-wn">preview</span>.</p>
+<div class="grid g3">
+  <div class="zr"><span class="sq" style="background:#be3422"></span><b>Baixo vigor</b><span class="ha num">8,4 ha</span><small>#BE3422 · 20% do talhão</small><span class="zbar"><i style="width:20%;background:#be3422"></i></span></div>
+  <div class="zr"><span class="sq" style="background:#ecb22e"></span><b>Médio vigor</b><span class="ha num">14,1 ha</span><small>#ECB22E · 33%</small><span class="zbar"><i style="width:33%;background:#ecb22e"></i></span></div>
+  <div class="zr"><span class="sq" style="background:#348c38"></span><b>Alto vigor</b><span class="ha num">20,3 ha</span><small>#348C38 · 47%</small><span class="zbar"><i style="width:47%;background:#348c38"></i></span></div>
+</div>
+<p class="cap">Validador dataviz: separação para daltonismo passa (ΔE 17,5 protan, 27,6 tritan; 27,5 visão normal). O amarelo fica fora da faixa de luminosidade e abaixo de 3:1 sobre o fundo, por isso <b>todo uso exige rótulo visível, borda tinta 1,5px no quadrado de legenda e ha em texto</b>. Áreas sempre em hectares com vírgula decimal.</p>
+</section>
+
+<!-- ============ TIPOGRAFIA ============ -->
+<section id="tipografia">
+<h2>Tipografia</h2>
+<p class="lead">Duas famílias: serifada <code>font-serif</code> (Georgia, Cambria) para títulos e números-chave; sans do sistema para o resto. Sem fonte baixada, funciona offline.</p>
+<div class="box">
+  <div class="ty"><small>Display 36 / 700<br><code>text-4xl</code></small><div style="font:700 36px/1.1 var(--serif)">Aviso de privacidade</div></div>
+  <div class="ty"><small>Título 30 / 700<br><code>text-3xl</code></small><div style="font:700 30px/1.15 var(--serif)">Fazendas</div></div>
+  <div class="ty"><small>Seção 20 / 700<br><code>text-xl</code></small><div style="font:700 20px/1.25 var(--serif);color:var(--folha)">Fazenda Santa Rita</div></div>
+  <div class="ty"><small>Corpo 16 / 400<br><code>text-base</code></small><div>Excluir um talhão apaga também suas cenas, zonas e alertas.</div></div>
+  <div class="ty"><small>Rótulo 14 / 500<br><code>text-sm font-medium</code></small><div style="font-size:14px;font-weight:500">Município</div></div>
+  <div class="ty"><small>Apoio 14 / 400<br><code>text-sm</code></small><div style="font-size:14px;color:var(--barro)">Sorriso / MT</div></div>
+  <div class="ty"><small>Eyebrow 12 / 600<br><code>text-xs uppercase tracking-widest</code></small><div class="eyebrow" style="margin:0">Transparência</div></div>
+  <div class="ty"><small>Número-chave 34 / 700<br>serif · tabular</small><div class="num" style="font:700 34px/1 var(--serif);color:var(--folha)">0,72</div></div>
+</div>
+<div class="grid g3" style="margin-top:16px">
+  <div class="box"><span class="lbl">Pesos</span><div>400 corpo<br><b style="font-weight:500">500 rótulo</b><br><b style="font-weight:600">600 botão</b><br><b>700 título</b></div></div>
+  <div class="box"><span class="lbl">Escala usada</span><p class="num" style="margin:0">12 · 14 · 16 · 20 · 30 · 36 px<br><span class="cap">Corpo mobile nunca abaixo de 16px em campos (evita zoom do iOS).</span></p></div>
+  <div class="box"><span class="lbl">Numerais</span><p style="margin:0">Vírgula decimal (0,72), data “28 out 2026”, <code>tabular-nums</code> em colunas e legendas.</p></div>
+</div>
+</section>
+
+<!-- ============ ESPAÇAMENTO ============ -->
+<section id="espacamento">
+<h2>Espaçamento</h2>
+<p class="lead">Escala de 4px do Tailwind. Gap de formulário 16, padding de card 20, seção 24–32.</p>
+<div class="box">
+  <div class="sp"><code>1 · 4px</code><i style="width:4px"></i><span>ícone ↔ texto mínimo</span></div>
+  <div class="sp"><code>2 · 8px</code><i style="width:8px"></i><span>entre alvos de toque (mín.)</span></div>
+  <div class="sp"><code>3 · 12px</code><i style="width:12px"></i><span>gap de ações, padding de campo X</span></div>
+  <div class="sp"><code>4 · 16px</code><i style="width:16px"></i><span>space-y do formulário, gutter mobile</span></div>
+  <div class="sp"><code>5 · 20px</code><i style="width:20px"></i><span>padding de card de fazenda</span></div>
+  <div class="sp"><code>6 · 24px</code><i style="width:24px"></i><span>gutter tablet, margem de bloco</span></div>
+  <div class="sp"><code>8 · 32px</code><i style="width:32px"></i><span>entre seções</span></div>
+  <div class="sp"><code>12 · 48px</code><i style="width:48px"></i><span>respiro de página</span></div>
+</div>
+</section>
+
+<!-- ============ RAIOS ============ -->
+<section id="raios">
+<h2>Raios</h2>
+<div class="grid g4">
+  <div><div class="rad" style="border-radius:4px">4px</div><p class="cap"><code>rounded</code> · botão, campo, toast</p></div>
+  <div><div class="rad" style="border-radius:8px">8px</div><p class="cap"><code>rounded-lg</code> · card de fazenda, formulário</p></div>
+  <div><div class="rad" style="border-radius:12px">12–16px</div><p class="cap">card de talhão, modal, vidro <span class="tag-wn">preview</span></p></div>
+  <div><div class="rad" style="border-radius:999px">pílula</div><p class="cap"><code>rounded-full</code> · selo, badge, play</p></div>
+</div>
+</section>
+
+<!-- ============ SOMBRAS ============ -->
+<section id="sombras">
+<h2>Sombras</h2>
+<p class="lead">Interface plana: sombra só em elementos que flutuam sobre o mapa ou sobre um fundo escurecido.</p>
+<div class="grid g4" style="background:#cfc7b0;padding:16px;border-radius:8px">
+  <div class="shd" style="box-shadow:none;border:1px solid var(--linha)">nenhuma<br>cards e formulários (borda)</div>
+  <div class="shd" style="box-shadow:0 1px 3px #0004,0 1px 2px #0003">shadow<br>botões e toast sobre o mapa</div>
+  <div class="shd" style="box-shadow:0 8px 24px #0006">0 8 24 /40<br>popup do pixel</div>
+  <div class="shd" style="box-shadow:0 14px 40px #0007">0 14 40 /45<br>modal sobre scrim</div>
+</div>
+<p class="cap">Bottom sheet: <code>0 -10px 30px #0006</code>. Scrim de modal: preto 62%.</p>
+</section>
+
+<!-- ============ GRID ============ -->
+<section id="grid">
+<h2>Grid e breakpoints</h2>
+<p class="lead">Mobile primeiro. O mapa é a tela principal no celular; o painel vira bottom sheet abaixo de 700px de largura útil.</p>
+<div class="tw"><table><tr><th>Alvo</th><th>Largura</th><th>Comportamento</th></tr>
+<tr><td><b>Celular</b></td><td class="num">375px (base)</td><td>1 coluna, gutter 16, painel em bottom sheet, alvos ≥44px</td></tr>
+<tr><td><b>Tablet</b></td><td class="num">≥768px (<code>md</code>) · <code>sm</code> 640px</td><td>cards em 2 colunas (<code>sm:grid-cols-2</code>), gutter 24, painel lateral</td></tr>
+<tr><td><b>Desktop</b></td><td class="num">≥1024px (<code>lg</code>)</td><td>conteúdo até <code>max-w-5xl</code> (1024px); mapa + painel de 392px</td></tr></table></div>
+<div class="bp" style="margin-top:16px">
+  <div><div class="bpf" style="width:112px"><b></b><b></b><b class="l"></b></div><p class="cap">375 · 1 col</p></div>
+  <div><div class="bpf" style="width:200px;grid-template-columns:1fr 1fr"><b style="grid-column:1/3"></b><b class="l"></b><b class="l"></b></div><p class="cap">768 · 2 col</p></div>
+  <div><div class="bpf" style="width:320px;grid-template-columns:1fr 1fr 96px"><b style="grid-column:1/4"></b><b class="l" style="grid-column:1/3;height:90px"></b><b class="l" style="height:90px;background:var(--tinta)"></b></div><p class="cap">1280 · mapa + painel</p></div>
+</div>
+<p class="cap">Teste sempre 375px sem rolagem horizontal. Use este alternador “Celular 375” no topo para ver a própria página nessa largura.</p>
+</section>
+
+<!-- ============ BOTÕES ============ -->
+<section id="botoes">
+<h2>Botões</h2>
+<p class="lead">Uma ação primária por tela. Altura mínima 44px.</p>
+<div class="box">
+<h3 style="margin-top:0">Primário</h3>
+<div class="states">
+  <figure><button class="btn pri" type="button">Salvar</button><figcaption>padrão</figcaption></figure>
+  <figure><button class="btn pri h" type="button">Salvar</button><figcaption>hover #355A23</figcaption></figure>
+  <figure><button class="btn pri f" type="button">Salvar</button><figcaption>foco visível</figcaption></figure>
+  <figure><button class="btn pri" type="button" disabled>Salvar</button><figcaption>desabilitado (60%)</figcaption></figure>
+  <figure><button class="btn pri" type="button" disabled aria-busy="true"><span class="spin"></span>Salvando…</button><figcaption>carregando</figcaption></figure>
+</div>
+<h3>Secundário (texto sublinhado)</h3>
+<div class="states">
+  <figure><button class="btn sec" type="button">Cancelar</button><figcaption>padrão</figcaption></figure>
+  <figure><button class="btn sec h" type="button">Cancelar</button><figcaption>hover</figcaption></figure>
+  <figure><button class="btn sec f" type="button">Cancelar</button><figcaption>foco</figcaption></figure>
+  <figure><button class="btn sec" type="button" disabled>Cancelar</button><figcaption>desabilitado</figcaption></figure>
+  <figure><button class="btn out" type="button"><svg class="i" aria-hidden="true"><use href="#i-dl"/></svg>Contorno</button><figcaption>variante sobre cartão</figcaption></figure>
+</div>
+<h3>Perigo</h3>
+<div class="states">
+  <figure><button class="btn per" type="button">Excluir</button><figcaption>padrão</figcaption></figure>
+  <figure><button class="btn per h" type="button">Excluir</button><figcaption>hover #991B1B</figcaption></figure>
+  <figure><button class="btn per f" type="button">Excluir</button><figcaption>foco</figcaption></figure>
+  <figure><button class="btn per" type="button" disabled>Excluir</button><figcaption>desabilitado</figcaption></figure>
+  <figure><button class="btn per" type="button" disabled aria-busy="true"><span class="spin"></span>Excluindo…</button><figcaption>carregando</figcaption></figure>
+</div>
+</div>
+<p class="cap">Estado de carregamento: desabilitar o botão, trocar o rótulo por gerúndio com reticências (“Salvando…”, “Importando…”) e manter a largura.</p>
+</section>
+
+<!-- ============ FORMULÁRIOS ============ -->
+<section id="formularios">
+<h2>Formulários</h2>
+<div class="grid g2">
+  <div class="box">
+    <label class="fld">Nome<input class="inp" value="Fazenda Santa Rita"></label>
+    <p class="cap">padrão (rótulo visível acima, nunca só placeholder)</p><br>
+    <label class="fld">Município<input class="inp f" value="Sorriso"></label>
+    <p class="cap">foco: borda folha + anel folha/30</p><br>
+    <label class="fld">Observação<input class="inp" disabled value="Somente leitura"></label>
+    <p class="cap">desabilitado (60%)</p>
+  </div>
+  <div class="box">
+    <label class="fld">UF<select class="inp"><option>Selecione</option><option selected>MT</option><option>GO</option></select></label>
+    <p class="cap">select com lista de UFs, mesmo estilo do campo</p><br>
+    <label class="fld" for="e1">Nome<input id="e1" class="inp bad" value="Fazenda Santa Rita" aria-invalid="true" aria-describedby="e1m"></label>
+    <p class="err" id="e1m" role="alert"><svg class="i" aria-hidden="true" style="width:16px;height:16px"><use href="#i-oct"/></svg>Já existe uma fazenda com esse nome.</p>
+    <p class="cap">erro: texto vermelho abaixo do campo, <code>role="alert"</code>, ícone, borda vermelha</p>
+  </div>
+</div>
+</section>
+
+<!-- ============ CARDS ============ -->
+<section id="cards">
+<h2>Cards e badges</h2>
+<h3 style="margin-top:0">Card de fazenda</h3>
+<div class="grid g2">
+  <div class="farm"><div><h4>Fazenda Santa Rita</h4><p class="loc">Sorriso / MT</p><p style="margin:4px 0 0;font-size:14px">3 talhão(ões)</p></div>
+    <div class="inline-del" style="gap:16px"><a href="#cards" style="color:var(--folha);font-weight:600;text-underline-offset:4px;min-height:44px;display:inline-flex;align-items:center">Abrir mapa</a><a href="#cards" style="min-height:44px;display:inline-flex;align-items:center;text-underline-offset:4px;color:var(--tinta)">Editar</a><a href="#cards" style="min-height:44px;display:inline-flex;align-items:center;text-underline-offset:4px;color:#b91c1c">Excluir</a></div></div>
+  <div class="farm" style="border-style:dashed;text-align:center;justify-content:center;min-height:120px">Nenhuma fazenda ainda. Cadastre a primeira.<br><span class="cap">estado vazio: borda tracejada + convite à ação</span></div>
+</div>
+<h3>Card de talhão: tendência e selo “reprocesse”</h3>
+<div class="grid g3">
+  <div class="plot"><div class="tr"><h4>Talhão 1</h4><span class="sev"><svg class="i" aria-hidden="true"><use href="#i-warn"/></svg>Média</span></div>
+    <div style="margin-top:10px"><span class="nv num">0,72</span> <span class="trend up num"><span class="arrow" aria-hidden="true">↑</span> +0,05<span style="position:absolute;left:-9999px"> em alta</span></span><div class="muted">NDVI atual · cena de 28/10</div></div></div>
+  <div class="plot"><div class="tr"><h4>Talhão 3</h4><span class="sev alta"><svg class="i" aria-hidden="true"><use href="#i-oct"/></svg>Alta</span></div>
+    <div style="margin-top:10px"><span class="nv low num">0,41</span> <span class="trend down num"><span class="arrow" aria-hidden="true">↓</span> −0,12<span style="position:absolute;left:-9999px"> em queda</span></span><div class="muted">NDVI atual · cena de 26/10</div></div></div>
+  <div class="plot"><div class="tr"><h4>Talhão 4</h4><span class="selo"><svg class="i" aria-hidden="true" style="width:14px;height:14px"><use href="#i-cloud"/></svg>Reprocesse</span></div>
+    <div style="margin-top:10px"><span class="nv num" style="color:var(--mut)">—</span> <span class="trend flat">→ estável</span><div class="muted">Sem cena válida. Reprocesse para tentar de novo.</div></div></div>
+</div>
+<p class="cap">Tendência: <b>↑ verde</b> sobe, <b>↓ vermelho</b> cai, <b>→ cinza</b> estável (variação absoluta &lt; 0,02). Sempre seta + sinal + número. NDVI baixo (&lt; 0,5, valor ilustrativo) usa vermelho no número. Selo “reprocesse”: tracejado + barro, indica ação pendente.</p>
+<h3>Badge de severidade</h3>
+<div class="states"><span class="sev"><svg class="i" aria-hidden="true"><use href="#i-warn"/></svg>Média</span><span class="sev alta"><svg class="i" aria-hidden="true"><use href="#i-oct"/></svg>Alta</span><span class="selo">Reprocesse</span><span class="tag-ok">Concluído</span></div>
+</section>
+
+<!-- ============ FEEDBACK ============ -->
+<section id="feedback">
+<h2>Avisos, erro, sucesso e confirmação</h2>
+<div class="grid g3">
+  <div class="msg warn" role="status"><svg class="i" aria-hidden="true"><use href="#i-warn"/></svg><div><b>Atenção</b>Mais de 60% de nuvem em 6 cenas. Amplie o período.</div></div>
+  <div class="msg erro" role="alert"><svg class="i" aria-hidden="true"><use href="#i-oct"/></svg><div><b>Erro</b>Não foi possível carregar. <a href="#feedback" style="color:inherit">Tentar novamente</a></div></div>
+  <div class="msg ok" role="status"><svg class="i" aria-hidden="true"><use href="#i-ok"/></svg><div><b>Pronto</b>3 talhão(ões) importado(s), 1 ignorado(s).</div></div>
+</div>
+<h3>Toasts sobre o mapa (ImportButton)</h3>
+<div class="states" style="background:#3b4a2c;padding:16px;border-radius:8px"><span class="toast ok" role="status">3 talhão(ões) importado(s).</span><span class="toast er" role="alert">Arquivo inválido ou vazio.</span></div>
+<p class="cap">Sucesso = folha, erro = barro sobre o mapa. Não roubar foco; anunciar com <code>role="status"</code> ou <code>"alert"</code>.</p>
+<h3>Confirmação inline (exclusão de fazenda)</h3>
+<div class="box">
+  <div class="inline-del"><b>Excluir fazenda e todos os dados?</b><button class="btn per" type="button">Excluir</button><button class="btn sec" type="button">Cancelar</button></div>
+  <p class="cap">Padrão do app: confirmação no próprio card, sem modal. Texto diz o que será apagado.</p>
+</div>
+<h3>Modal de confirmação</h3>
+<div class="scrim"><div class="dlg" role="dialog" aria-labelledby="mt" aria-modal="true"><h4 id="mt">Excluir talhão 3?</h4><p>Cenas, zonas, alertas e relatórios deste talhão serão apagados. Não dá para desfazer.</p>
+  <div class="btns"><button class="btn sec" type="button">Cancelar</button><button class="btn per" type="button">Excluir talhão</button></div></div></div>
+<p class="cap">Usar modal só quando o fluxo sai do contexto. Esc fecha, foco volta ao gatilho, o botão perigoso nomeia a ação.</p>
+</section>
+
+<!-- ============ MAPA ============ -->
+<section id="mapa">
+<h2>Componentes do mapa <span class="tag-wn">preview</span></h2>
+<p class="lead">Painéis de vidro escuro (<code>rgba(24,33,22,.84)</code> + blur 10px) sobre a imagem de satélite.</p>
+<h3 style="margin-top:0">Legenda NDVI</h3>
+<div class="mapbg"><div class="glass legend"><b>NDVI</b><div class="ramp"></div><div class="tk num"><span>−0,2</span><span>0,35</span><span>0,9</span></div><div class="nd"><span class="hatch"></span>sem dado (nuvem/sombra)</div></div></div>
+<h3>Slider de timeline com play</h3>
+<div class="mapbg" style="min-height:0"><div class="glass tl" id="tl">
+  <button class="play" id="play" type="button" aria-label="Reproduzir linha do tempo"><svg class="i" id="pi"><use href="#i-play"/></svg></button>
+  <div><div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px"><span class="date num" id="td">06 mai 2026</span><span class="meta num" id="tm">NDVI médio 0,78</span></div>
+  <input type="range" id="rg" min="0" max="11" value="0" aria-label="Data da cena"></div></div></div>
+<p class="cap">Botão de 52px (48px no celular). Ícone alterna play/pausa e o rótulo acompanha. Respeita <code>prefers-reduced-motion</code> (sem animação automática). Teclado: setas movem a data.</p>
+<h3>Divisor de comparação (antes / depois)</h3>
+<div class="cmp"><div class="a"></div><div class="b"></div><span class="tg glass" style="left:10px">Antes · 06 mai</span><span class="tg glass" style="right:10px">Depois · 18 out</span>
+  <div class="dv" id="dv"><i><svg class="i" aria-hidden="true"><use href="#i-move"/></svg></i></div>
+  <input type="range" id="cr" min="0" max="100" value="50" aria-label="Divisor antes e depois"></div>
+<p class="cap">Alça de 48px, linha branca de 3px com contorno. Arraste ou use as setas; alternativa por teclado sempre disponível.</p>
+<div class="grid g2" style="margin-top:8px">
+  <div><h3>Popup de pixel</h3><div style="padding:48px 0 16px;display:flex;justify-content:center;background:#3b4a2c;border-radius:12px">
+    <div class="pop" role="dialog" aria-label="Valor do pixel"><b class="num">NDVI 0,61</b>Vegetação vigorosa<button class="cl" type="button" aria-label="Fechar"><span><svg class="i"><use href="#i-x"/></svg></span></button></div></div>
+    <p class="cap">Seta aponta o pixel; alvo de fechar com 44px. Sem dado: “Sem dado (nuvem)”.</p></div>
+  <div><h3>Bottom sheet (celular)</h3><div class="sheetdemo"><div class="sheet" id="sh"><button class="handle" id="sht" type="button" aria-expanded="true" aria-label="Expandir ou recolher painel"></button><b style="font:700 19px var(--serif)">Talhão 3 · Soja</b><p class="cap">42,8 ha · NDVI 0,74</p></div></div>
+    <p class="cap">Toque na alça para recolher/expandir (112px recolhido).</p></div>
+</div>
+</section>
+
+<!-- ============ LISTAS ============ -->
+<section id="listas">
+<h2>Lista de alertas e item de upload</h2>
+<div class="grid g2">
+  <div><span class="lbl">Alertas</span>
+    <div class="al alta"><div class="h"><span class="sev alta"><svg class="i" aria-hidden="true"><use href="#i-oct"/></svg>Alta</span><span class="dt num">18 out 2026</span></div><p>Queda de 0,18 no NDVI em 6,2 ha na região nordeste.</p><button class="btn out" type="button" style="font-size:14px"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>Ver no mapa</button></div>
+    <div class="al"><div class="h"><span class="sev"><svg class="i" aria-hidden="true"><use href="#i-warn"/></svg>Média</span><span class="dt num">03 out 2026</span></div><p>Vigor abaixo da mediana do talhão em 2,1 ha.</p><button class="btn out" type="button" style="font-size:14px"><svg class="i" aria-hidden="true"><use href="#i-pin"/></svg>Ver no mapa</button></div></div>
+  <div><span class="lbl">Item de upload (GeoJSON/KML)</span>
+    <div class="up-item"><svg class="i" aria-hidden="true"><use href="#i-file"/></svg><span class="nm">talhoes-safra.geojson</span><span class="num muted">62%</span><span class="prog" role="progressbar" aria-valuenow="62" aria-valuemin="0" aria-valuemax="100" aria-label="Importando"><i style="width:62%"></i></span></div>
+    <div class="up-item ok"><svg class="i" style="color:var(--folha)" aria-hidden="true"><use href="#i-ok"/></svg><span class="nm">sede.kml</span><span class="muted">Concluído</span><span class="muted" style="grid-column:2/4">3 talhão(ões) importado(s)</span></div>
+    <div class="up-item er"><svg class="i" style="color:#b91c1c" aria-hidden="true"><use href="#i-oct"/></svg><span class="nm">mapa.shp</span><button class="btn sec" type="button" style="min-height:44px">Tentar de novo</button><span class="err" style="grid-column:2/4;margin:0">Formato não aceito. Use .geojson, .json ou .kml.</span></div></div>
+</div>
+</section>
+
+<!-- ============ ÍCONES ============ -->
+<section id="icones">
+<h2>Ícones e setas</h2>
+<p class="lead">Conjunto SVG próprio de traço (24px viewBox, 1,8px, pontas redondas), tamanho padrão 20px; 24px em botões grandes. Sem emoji como ícone. Texto sempre acompanha ou há <code>aria-label</code>.</p>
+<div class="ic">
+  <div><svg class="i"><use href="#i-play"/></svg>play</div><div><svg class="i"><use href="#i-pause"/></svg>pause</div>
+  <div><svg class="i"><use href="#i-chart"/></svg>chart · Série</div><div><svg class="i"><use href="#i-layers"/></svg>layers · Zonas</div>
+  <div><svg class="i"><use href="#i-bell"/></svg>bell · Alertas</div><div><svg class="i"><use href="#i-file"/></svg>file · Relatório</div>
+  <div><svg class="i"><use href="#i-cmp"/></svg>cmp · Comparar</div><div><svg class="i"><use href="#i-dl"/></svg>dl · Baixar</div>
+  <div><svg class="i"><use href="#i-x"/></svg>x · Fechar</div><div><svg class="i"><use href="#i-pin"/></svg>pin · Ver no mapa</div>
+  <div><svg class="i"><use href="#i-warn"/></svg>warn · Média</div><div><svg class="i"><use href="#i-oct"/></svg>oct · Alta/erro</div>
+  <div><svg class="i"><use href="#i-ok"/></svg>ok · Sucesso</div><div><svg class="i"><use href="#i-cloud"/></svg>cloud · Sem cena</div>
+  <div><svg class="i"><use href="#i-move"/></svg>move · Divisor</div><div><svg class="i"><use href="#i-check"/></svg>check</div>
+</div>
+<h3>Setas de tendência (texto, não ícone)</h3>
+<div class="states"><span class="trend up num"><span class="arrow">↑</span> +0,05</span><span class="trend down num"><span class="arrow">↓</span> −0,12</span><span class="trend flat num"><span class="arrow">→</span> estável</span><span class="muted">▲ marcador de alerta no gráfico</span></div>
+</section>
+
+<!-- ============ REGRAS ============ -->
+<section id="regras">
+<h2>Regras de uso</h2>
+<div class="dd" style="margin-bottom:12px">
+  <div class="do"><h4><svg class="i" aria-hidden="true" style="width:16px;height:16px"><use href="#i-ok"/></svg>Faça</h4><ul><li>Um botão primário (folha) por tela.</li><li>Use os quatro tokens; tons via opacidade.</li><li>Mostre o número do NDVI junto da cor.</li><li>Rótulo visível em todo campo.</li><li>Mensagem de erro diz a causa e como corrigir.</li></ul></div>
+  <div class="dont"><h4><svg class="i" aria-hidden="true" style="width:16px;height:16px"><use href="#i-oct"/></svg>Não faça</h4><ul><li>Inventar cor nova fora dos tokens.</li><li>Usar vermelho/verde sem ícone ou texto.</li><li>Placeholder como único rótulo.</li><li>Alvo de toque menor que 44px.</li><li>Rampa arco-íris ou invertida no NDVI.</li></ul></div>
+</div>
+<div class="dd" style="margin-bottom:12px">
+  <div class="do"><h4><svg class="i" aria-hidden="true" style="width:16px;height:16px"><use href="#i-ok"/></svg>Faça</h4><ul><li>Texto 100% pt-BR, vírgula decimal, datas “28 out 2026”.</li><li>Confirmar exclusão dizendo o que será apagado.</li><li>Serifa só em títulos e números-chave.</li></ul></div>
+  <div class="dont"><h4><svg class="i" aria-hidden="true" style="width:16px;height:16px"><use href="#i-oct"/></svg>Não faça</h4><ul><li>Sombra em card comum (use borda).</li><li>Texto cinza claro (&lt; 4,5:1) sobre solo.</li><li>Animar sem respeitar movimento reduzido.</li></ul></div>
+</div>
+</section>
+
+<!-- ============ A11Y ============ -->
+<section id="acessibilidade">
+<h2>Acessibilidade</h2>
+<div class="grid g3">
+  <div class="box"><span class="lbl">Foco visível</span>
+    <button class="btn pri f" type="button">Foco por teclado</button>
+    <p class="cap">Anel de 3px (#2F7DE1) com 2px de distância em <code>:focus-visible</code>. Campos: borda folha + anel folha/30. Nunca <code>outline:none</code> sem substituto. Tab segue a ordem visual; link “Pular para o conteúdo” no topo.</p></div>
+  <div class="box"><span class="lbl">Alvo mínimo 44×44px</span>
+    <span class="target" style="width:44px;height:44px"><i style="width:20px;height:20px">20</i></span> <span class="target" style="width:44px;height:44px"><i style="width:44px;height:44px;border-radius:2px">44</i></span>
+    <p class="cap">Ícone de 20px ganha área de 44px com padding. Espaço entre alvos ≥8px. No celular, campos com altura ≥44px e fonte ≥16px.</p></div>
+  <div class="box"><span class="lbl">Não depender só de cor</span>
+    <div class="states"><span class="sev"><svg class="i" aria-hidden="true"><use href="#i-warn"/></svg>Média</span><span class="sev alta"><svg class="i" aria-hidden="true"><use href="#i-oct"/></svg>Alta</span><span class="trend down"><span class="arrow">↓</span> −0,12</span></div>
+    <p class="cap">Severidade = forma + rótulo. Tendência = seta + sinal. Zonas = nome + área. Sem dado = hachura. Erro = ícone + texto.</p></div>
+</div>
+<div class="tw" style="margin-top:16px"><table><tr><th>Item</th><th>Regra</th></tr>
+<tr><td>Contraste</td><td>Texto ≥4,5:1; componentes e ícones ≥3:1 (tabela de cores acima)</td></tr>
+<tr><td>Formulário</td><td><code>label</code> associado, <code>aria-invalid</code>, erro com <code>role="alert"</code></td></tr>
+<tr><td>Mapa e gráfico</td><td><code>aria-label</code> com resumo; valores também em texto/tabela; slider por teclado</td></tr>
+<tr><td>Movimento</td><td>150–300ms, respeitar <code>prefers-reduced-motion</code>, play nunca inicia sozinho</td></tr>
+<tr><td>Idioma</td><td><code>lang="pt-BR"</code> no documento</td></tr></table></div>
+</section>
+</main>
+</div>
+</div></div>
+
+<script>
+(function(){
+  var $=function(s){return document.querySelector(s)};
+  /* alternador desktop/celular */
+  var b=document.body,bd=$('#bDesk'),bm=$('#bMob');
+  function dev(m){b.classList.toggle('mob',m);bd.setAttribute('aria-pressed',!m);bm.setAttribute('aria-pressed',m);spy()}
+  bd.onclick=function(){dev(false)};bm.onclick=function(){dev(true)};
+  /* paradas da rampa (mesma interpolação do worker) */
+  var S=[-0.2,0.35,0.9],C=[[215,48,39],[254,224,80],[26,152,80]];
+  function col(v){v=Math.max(-.2,Math.min(.9,v));var k=v<=S[1]?1:2,f=(v-S[k-1])/(S[k]-S[k-1]);
+    return C[k-1].map(function(c,i){return Math.round(c+(C[k][i]-c)*f)})}
+  var nf=function(x){return x.toFixed(2).replace('.',',').replace('-','−')};
+  $('#stops').innerHTML=[-0.2,0,0.35,0.6,0.9].map(function(v){var c=col(v);
+    return '<div class="stop"><i style="background:rgb('+c+')"></i><div><b class="num">'+nf(v)+'</b>#'+c.map(function(x){return x.toString(16).padStart(2,'0')}).join('').toUpperCase()+'</div></div>'}).join('');
+  /* timeline */
+  var D=['06 mai','21 mai','05 jun','20 jun','05 jul','20 jul','04 ago','19 ago','03 set','18 set','03 out','18 out'],
+      V=[.78,.79,.8,.79,.77,.76,.73,.7,.66,.61,.56,.52],rg=$('#rg'),t;
+  function tick(){$('#td').textContent=D[rg.value]+' 2026';$('#tm').textContent='NDVI médio '+nf(V[rg.value])}
+  rg.oninput=tick;
+  function stop(){clearInterval(t);t=0;$('#pi').innerHTML='<use href="#i-play"/>';$('#play').setAttribute('aria-label','Reproduzir linha do tempo')}
+  $('#play').onclick=function(){
+    if(t)return stop();
+    if(matchMedia('(prefers-reduced-motion:reduce)').matches){rg.value=(+rg.value+1)%12;tick();return}
+    $('#pi').innerHTML='<use href="#i-pause"/>';$('#play').setAttribute('aria-label','Pausar linha do tempo');
+    t=setInterval(function(){if(+rg.value>=11)return stop();rg.value=+rg.value+1;tick()},700)};
+  /* divisor */
+  $('#cr').oninput=function(e){var v=e.target.value;$('#dv').style.left=v+'%';document.querySelector('.cmp .b').style.clipPath='inset(0 0 0 '+v+'%)'};
+  /* bottom sheet */
+  $('#sht').onclick=function(){var c=$('#sh').classList.toggle('closed');this.setAttribute('aria-expanded',!c)};
+  /* navegação lateral: seção atual */
+  var links=[].slice.call(document.querySelectorAll('#nav a')),secs=links.map(function(a){return $(a.getAttribute('href'))});
+  function spy(){var y=innerHeight*.3,cur=0;secs.forEach(function(s,i){if(s.getBoundingClientRect().top<y)cur=i});
+    links.forEach(function(a,i){i===cur?a.setAttribute('aria-current','true'):a.removeAttribute('aria-current')})}
+  addEventListener('scroll',spy,{passive:true});addEventListener('resize',spy);spy();
+  if(location.hash==='#celular')dev(true);
+})();
+</script>
+</body>
+</html>

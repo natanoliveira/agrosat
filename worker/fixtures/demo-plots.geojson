@@ -1,0 +1,110 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Talhão Soja Norte",
+        "crop": "soja",
+        "problematic": false
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -44.585,
+              -7.215
+            ],
+            [
+              -44.578,
+              -7.215
+            ],
+            [
+              -44.578,
+              -7.208
+            ],
+            [
+              -44.585,
+              -7.208
+            ],
+            [
+              -44.585,
+              -7.215
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Talhão Milho Sul",
+        "crop": "milho",
+        "problematic": true
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -44.555,
+              -7.24
+            ],
+            [
+              -44.547,
+              -7.24
+            ],
+            [
+              -44.547,
+              -7.232
+            ],
+            [
+              -44.555,
+              -7.232
+            ],
+            [
+              -44.555,
+              -7.24
+            ]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "name": "Talhão Algodão Leste",
+        "crop": "algodão",
+        "problematic": false
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [
+              -44.53,
+              -7.22
+            ],
+            [
+              -44.523,
+              -7.22
+            ],
+            [
+              -44.523,
+              -7.213
+            ],
+            [
+              -44.53,
+              -7.213
+            ],
+            [
+              -44.53,
+              -7.22
+            ]
+          ]
+        ]
+      }
+    }
+  ]
+}

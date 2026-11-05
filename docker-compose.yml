@@ -1,0 +1,101 @@
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-agrosat}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-agrosat}
+      POSTGRES_DB: ${POSTGRES_DB:-agrosat}
+    ports:
+      - "${POSTGRES_HOST_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "${REDIS_HOST_PORT:-6379}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  worker:
+    build: ./worker
+    environment:
+      DATA_MODE: ${DATA_MODE:-auto}
+      STAC_URL: ${STAC_URL:-https://earth-search.aws.element84.com/v1}
+      STAC_COLLECTION: ${STAC_COLLECTION:-sentinel-2-l2a}
+      STAC_TIMEOUT_S: ${STAC_TIMEOUT_S:-10}
+      DATA_DIR: /data
+      FIXTURES_DIR: /app/fixtures
+    volumes:
+      - agrosat-data:/data
+
+  # depuração: `docker compose --profile debug up -d worker-debug` expõe o worker em 127.0.0.1:WORKER_HOST_PORT
+  worker-debug:
+    profiles: ["debug"]
+    image: alpine/socat
+    command: TCP-LISTEN:8000,fork,reuseaddr TCP:worker:8000
+    depends_on: [worker]
+    ports:
+      - "127.0.0.1:${WORKER_HOST_PORT:-8000}:8000"
+
+  api:
+    build: ./api
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      PORT: 3001
+      DATABASE_URL: postgresql://${POSTGRES_USER:-agrosat}:${POSTGRES_PASSWORD:-agrosat}@postgres:5432/${POSTGRES_DB:-agrosat}
+      REDIS_URL: redis://redis:6379
+      WORKER_URL: http://worker:8000
+      WORKER_TIMEOUT_MS: ${WORKER_TIMEOUT_MS:-120000}
+      DATA_DIR: /data
+      SEED_GEOJSON: /seed/demo-plots.geojson
+      WEB_ORIGIN: ${WEB_ORIGIN:-http://localhost:3005}
+      THROTTLE_LIMIT: ${THROTTLE_LIMIT:-600}
+      THROTTLE_TTL: ${THROTTLE_TTL:-60}
+      PUBLIC_FILES_URL: ${PUBLIC_FILES_URL:-http://localhost:${API_HOST_PORT:-3001}/api/v1/files}
+    ports:
+      - "${API_HOST_PORT:-3001}:3001"
+    volumes:
+      - agrosat-data:/data
+      - ./worker/fixtures/demo-plots.geojson:/seed/demo-plots.geojson:ro
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3001/api/v1/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+
+  web:
+    build:
+      context: ./web
+      args:
+        NEXT_PUBLIC_API_URL: http://localhost:${API_HOST_PORT:-3001}/api/v1
+        NEXT_PUBLIC_BASEMAP_URL: ${NEXT_PUBLIC_BASEMAP_URL:-}
+        NEXT_PUBLIC_E2E: ${NEXT_PUBLIC_E2E:-}
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${WEB_HOST_PORT:-3005}:3005"
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3005').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+volumes:
+  pgdata:
+  agrosat-data:

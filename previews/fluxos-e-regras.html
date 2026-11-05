@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>AgroSat — Fluxos e regras (preview)</title>
+<style>
+:root{
+  /* tokens reais: web/tailwind.config.ts */
+  --solo:#f4efe4; --tinta:#1f2a1c; --folha:#3f6b2a; --barro:#8a5a2b;
+  --solo2:#e8e0cc; --mut:#56604f; --linha:rgba(31,42,28,.16);
+  --alta:#a8321f; --folha-cl:#a7d27a; --foco:#2f7de1;
+  --serif:Georgia,Cambria,serif; --sans:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:#d9d2bf;color:var(--tinta);font:16px/1.55 var(--sans)}
+button{font:inherit;color:inherit;cursor:pointer;touch-action:manipulation}
+:focus-visible{outline:3px solid var(--foco);outline-offset:2px}
+code{font:13px ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--solo2);padding:1px 6px;border-radius:4px;overflow-wrap:anywhere}
+.devbar{position:sticky;top:0;z-index:50;display:flex;justify-content:center;gap:10px;padding:8px;background:#1f2a1cee;color:var(--solo)}
+.seg{display:inline-flex;border:1px solid #f4efe455;border-radius:999px;overflow:hidden}
+.seg button{border:0;background:none;color:var(--solo);padding:0 18px;min-height:44px}
+.seg button[aria-pressed=true]{background:var(--folha-cl);color:var(--tinta);font-weight:700}
+.stagewrap{display:flex;justify-content:center}
+.stage{container-type:inline-size;width:100%;background:var(--solo);min-height:100vh}
+body.mob .stagewrap{padding:20px 0 40px}
+body.mob .stage{width:375px;min-height:0;border-radius:34px;box-shadow:0 0 0 10px #151a13,0 24px 60px -20px #000a;overflow:hidden}
+.main{padding:24px clamp(14px,4cqw,48px) 56px;max-width:1100px;margin:0 auto}
+h1{font:700 clamp(28px,6cqw,42px)/1.1 var(--serif);margin:0 0 6px}
+h2{font:700 24px/1.2 var(--serif);color:var(--folha);margin:0 0 4px;padding-top:8px;border-top:2px solid var(--folha)}
+h3{font:700 18px/1.3 var(--serif);margin:0 0 8px}
+.eyebrow{font:600 12px/1 var(--sans);letter-spacing:.14em;text-transform:uppercase;color:var(--barro);margin:0 0 8px}
+.lead{color:var(--mut);margin:0 0 16px;max-width:68ch}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 24px;border-bottom:1px solid var(--linha);padding-bottom:10px}
+.tabs button{min-height:44px;padding:0 14px;border:1px solid var(--linha);background:#fffc;border-radius:999px;font-weight:600;font-size:14px}
+.tabs button[aria-selected=true]{background:var(--folha);color:#fff;border-color:var(--folha)}
+section.sec{margin-bottom:36px}
+.grid{display:grid;gap:16px;grid-template-columns:repeat(2,minmax(0,1fr))}
+@container (max-width:760px){.grid{grid-template-columns:minmax(0,1fr)}}
+.box{background:#fffc;border:1px solid var(--linha);border-radius:8px;padding:14px;min-width:0}
+.cap{font-size:13px;color:var(--mut);margin:6px 0 0}
+.fl{display:block;width:100%;max-width:480px;height:auto;margin:0 auto}
+.scroll{overflow-x:auto;border:1px dashed var(--linha);border-radius:6px;background:#fff8}
+.hint{display:none;font-size:12px;color:var(--mut);margin:0 0 6px}
+@container (max-width:830px){.hint{display:block}}
+table{border-collapse:collapse;width:100%;font-size:14px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--linha);vertical-align:top;overflow-wrap:anywhere}
+th{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:var(--mut)}
+@container (max-width:640px){
+  thead{display:none}
+  tr{display:block;border:1px solid var(--linha);border-radius:8px;background:#fffc;margin:0 0 10px;padding:4px 0}
+  td{display:block;border:0;padding:4px 12px}
+  td::before{content:attr(data-l);display:block;font:600 11px/1.3 var(--sans);text-transform:uppercase;letter-spacing:.06em;color:var(--mut)}
+}
+ul.div{padding-left:20px;margin:0}ul.div li{margin:0 0 6px}
+/* svg */
+svg text{font-family:var(--sans)}
+.n-box{fill:#fff;stroke:var(--folha);stroke-width:1.4}
+.n-dec{fill:#f3e6d3;stroke:var(--barro);stroke-width:1.4}
+.n-end{fill:#e1ecd8;stroke:var(--folha);stroke-width:2}
+.n-err{fill:#f6dcd6;stroke:var(--alta);stroke-width:1.2}
+.n-warn{fill:#f3e6d3;stroke:var(--barro);stroke-width:1.2}
+.n-ok{fill:#e1ecd8;stroke:var(--folha);stroke-width:1.2}
+.ed{fill:none;stroke:var(--tinta);stroke-width:1.3}
+.t{fill:var(--tinta);font-size:13px}
+.sm{font-size:12px}
+.lb{fill:var(--mut);font-size:10.5px;font-weight:700;paint-order:stroke;stroke:var(--solo);stroke-width:3px}
+.sq-l{stroke:var(--mut);stroke-dasharray:4 4;stroke-width:1}
+.sq-t{fill:var(--tinta);font-size:11.5px;paint-order:stroke;stroke:#fff;stroke-width:3px}
+.sq-h{fill:var(--folha)}.sq-ht{fill:#fff;font-size:13px;font-weight:700}
+.sep{fill:#f3e6d3;stroke:var(--barro)}
+</style>
+</head>
+<body>
+<div class="devbar"><div class="seg" role="group" aria-label="Visualização"><button id="bd" aria-pressed="true">Desktop</button><button id="bm" aria-pressed="false">Celular 375</button></div></div>
+<div class="stagewrap"><div class="stage"><main class="main">
+<p class="eyebrow">AgroSat · fluxos e regras</p>
+<h1>Como o produto se comporta</h1>
+<p class="lead">Jornada, processamento, regras de negócio, rastreabilidade e LGPD. Valores conferidos no código (worker/app, api/src), não só na spec. Estados do job: <code>queued</code>, <code>running</code>, <code>completed</code>, <code>failed</code>.</p>
+<div class="tabs" role="tablist" id="tabs"></div>
+<div id="panels"></div>
+</main></div></div>
+<script>
+const DATA={"flows":{"jornada":{"title":"Jornada do produtor/agrônomo","steps":[{"k":"box","text":"1. Criar fazenda: nome, município, UF","exits":[{"text":"FARM_EXISTS (409): nome já usado. Troque o nome.","label":"erro","k":"err"},{"text":"VALIDATION_ERROR (400): nome vazio ou UF sem 2 letras","label":"erro","k":"err"}]},{"k":"box","text":"2. Criar talhão: \"+ Desenhar talhão\" no mapa OU \"Importar GeoJSON/KML\" (MultiPolygon vira N talhões)","exits":[{"text":"INVALID_GEOMETRY (400): auto-interseção, anel aberto ou menos de 4 pontos. Nada é criado.","label":"erro","k":"err"},{"text":"INVALID_FILE (400): extensão fora de .geojson/.json/.kml, mais de 5 MB ou ilegível","label":"erro","k":"err"},{"text":"NO_POLYGON (400): \"nenhum polígono encontrado no arquivo\"","label":"erro","k":"err"}]},{"k":"box","text":"3. Processar histórico dos últimos 6 meses (talhão ou fazenda inteira)","exits":[{"text":"JOB_IN_PROGRESS (409): já há job queued/running. Aguarde esse job.","label":"erro","k":"err"}]},{"k":"dec","text":"4. Job terminou? Acompanhar queued, running, completed","exits":[{"text":"failed NO_OFFLINE_DATA: talhão fora da região de demonstração no modo offline. Redesenhe dentro da área.","label":"falhou","k":"err"},{"text":"failed STAC_UNAVAILABLE ou WORKER_*: após 3 tentativas. Processe de novo mais tarde.","label":"falhou","k":"err"}]},{"k":"dec","text":"5. Há cenas válidas?","exits":[{"text":"Sem cenas válidas no período: sem NDVI, estatística nem alerta. Tente depois.","label":"não","k":"warn"}]},{"k":"box","text":"6. Timeline: slider e play percorrem as cenas válidas; toque no mapa mostra o NDVI do pixel","exits":[{"text":"Pixel nodata ou fora do talhão: \"sem dado\"","label":"vazio","k":"warn"}]},{"k":"box","text":"7. Comparar duas datas com o divisor arrastável"},{"k":"box","text":"8. Zonas baixo/médio/alto da última cena válida (ou da data escolhida) e \"Baixar GeoJSON das zonas\"","exits":[{"text":"SCENE_NOT_FOUND (404): a data escolhida não tem cena válida. Escolha outra.","label":"erro","k":"err"}]},{"k":"box","text":"9. Alertas: lista por severidade e \"Ver no mapa\" (abre a data e enquadra a mancha)"},{"k":"dec","text":"10. Geometria do talhão foi editada depois?","exits":[{"text":"needsReprocess: aviso \"Geometria alterada, reprocesse\". Reprocessar volta ao passo 3.","label":"sim","k":"warn"}]},{"k":"end","text":"11. Gerar relatório PDF e baixar","exits":[{"text":"NO_VALID_SCENE (422): talhão sem cena válida. Processe antes.","label":"erro","k":"err"}]}]},"fonte":{"title":"Escolha da fonte de dados (DATA_MODE)","steps":[{"k":"dec","text":"DATA_MODE = fixtures?","exits":[{"text":"Usa as fixtures (Uruçuí-PI, 12 datas). Talhão fora da bbox: NO_OFFLINE_DATA 422, sem retry. source=fixtures","label":"sim","k":"ok"}]},{"k":"dec","text":"DATA_MODE = stac?","exits":[{"text":"Só STAC. Se cair: STAC_UNAVAILABLE 503 e o job tenta 3 vezes. source=stac","label":"sim","k":"warn"}]},{"k":"box","text":"DATA_MODE = auto: tenta o STAC (timeout STAC_TIMEOUT_S, padrão 10 s)"},{"k":"dec","text":"STAC respondeu?","exits":[{"text":"Sim: usa as cenas do STAC. source=stac","label":"sim","k":"ok"}]},{"k":"end","text":"Log de aviso e cai para as fixtures. source=fixtures (job não falha). Fora da bbox: NO_OFFLINE_DATA","exits":[]}]},"persistencia":{"title":"Persistência transacional do resultado","steps":[{"k":"box","text":"Abre UMA transação (timeout 60 s)"},{"k":"box","text":"Cada cena: upsert por (talhão, data)"},{"k":"box","text":"Zonas: substitui as da cena (cena inválida fica sem zonas)"},{"k":"box","text":"Alertas: upsert por (talhão, data, tipo). Insert novo entra na lista de notificação"},{"k":"box","text":"Remove cenas da janela que o worker não devolveu"},{"k":"box","text":"Remove alertas da janela que sumiram"},{"k":"dec","text":"updatedAt do talhão ≤ instante em que a geometria foi lida?","exits":[{"text":"Não: a geometria mudou durante o job. Mantém needsReprocess = true","label":"não","k":"warn"}]},{"k":"end","text":"Sim: needsReprocess = false. Commit. Job completed. Notificação simulada só dos alertas novos"}]},"pipeline":{"title":"Pipeline por cena (NDVI, máscara, estatísticas, zonas)","steps":[{"k":"box","text":"Recorta B04, B08 e SCL pelo polígono (SCL de 20 m sobe para a grade de 10 m)"},{"k":"box","text":"NDVI = (B08 − B04) / (B08 + B04)","exits":[{"text":"B08 + B04 = 0: pixel nodata","label":"zero","k":"warn"}]},{"k":"box","text":"Máscara: fora do polígono ou SCL em {3, 8, 9, 10} vira nodata","exits":[{"text":"3 sombra, 8 e 9 nuvem, 10 cirrus","label":"SCL","k":"warn"}]},{"k":"dec","text":"Mais de 60% do talhão inválido?","exits":[{"text":"Cena valid=false: gravada sem estatística, PNG, zonas nem alertas","label":"sim","k":"err"}]},{"k":"box","text":"Estatísticas: média, mediana, p10, p90 e % de área válida"},{"k":"box","text":"Zonas: quantis 33 e 66 dos pixels válidos. ≤ q33 baixo, ≤ q66 médio, resto alto. Vetoriza e soma ha por classe"},{"k":"box","text":"Alertas de queda e de mancha, contra as cenas válidas anteriores"},{"k":"end","text":"Grava ndvi.png, ndvi.tif e zones.geojson em /data/plots/{talhão}/{data}/"}]},"queda":{"title":"Alerta de queda","steps":[{"k":"dec","text":"Há 3 ou mais cenas válidas anteriores?","exits":[{"text":"Não: sem alerta","label":"não","k":"warn"}]},{"k":"box","text":"base = mediana das médias das 3 últimas cenas válidas"},{"k":"dec","text":"base ≤ 0 ou média ≥ 85% da base?","exits":[{"text":"Sim: sem alerta (queda de até 15%)","label":"sim","k":"ok"}]},{"k":"dec","text":"média \u003c 75% da base (queda > 25%)?","exits":[{"text":"Sim: alerta drop, severidade ALTA","label":"sim","k":"err"}]},{"k":"end","text":"Alerta drop, severidade MÉDIA (queda entre 15% e 25%)"}]},"mancha":{"title":"Alerta de mancha","steps":[{"k":"dec","text":"Há pelo menos 1 cena válida anterior?","exits":[{"text":"Não: sem p10 histórico, sem alerta","label":"não","k":"warn"}]},{"k":"box","text":"p10 histórico = percentil 10 de todos os pixels válidos das cenas anteriores"},{"k":"box","text":"Pixels com NDVI \u003c p10 formam manchas contíguas (vizinhança de 4)"},{"k":"box","text":"Fica a maior mancha, em ha. Manchas dispersas não somam. 1 alerta por talhão e data"},{"k":"dec","text":"Maior mancha > 1 ha?","exits":[{"text":"Não: sem alerta","label":"não","k":"ok"}]},{"k":"dec","text":"Maior mancha > 3 ha?","exits":[{"text":"Sim: alerta patch, severidade ALTA","label":"sim","k":"err"}]},{"k":"end","text":"Alerta patch, severidade MÉDIA (entre 1 e 3 ha). A geometria da mancha é salva"}]},"exclusao":{"title":"Exclusão em cascata (DELETE /farms/:id)","steps":[{"k":"box","text":"Lista os ids dos talhões da fazenda"},{"k":"dec","text":"Fazenda existe? Apaga a linha de farm","exits":[{"text":"NOT_FOUND (404). Nenhum arquivo é tocado","label":"não","k":"err"}]},{"k":"box","text":"FK ON DELETE CASCADE no banco: plot, ndvi_scene, zone, alert, job, report"},{"k":"box","text":"Só depois do commit: remove /data/plots/{id} e /data/reports/{id} de cada talhão"},{"k":"end","text":"204 sem corpo. DELETE /plots/:id faz o mesmo para um talhão"}]}},"sequences":{"processamento":{"title":"Do clique em \"Processar\" à notificação","actors":["Web","API","Fila","Worker","Fonte","Banco"],"msgs":[["Web","API","POST /plots/:id/process"],["API","Banco","Transação: trava o talhão (FOR UPDATE) e procura job queued/running"],["API","Web","409 JOB_IN_PROGRESS se já houver job ativo",true],["API","Banco","INSERT job (status queued)"],["API","Fila","add history (3 tentativas, backoff exponencial de 5 s)"],["API","Web","202 com jobId",true],["Web","API","GET /jobs/:id (consulta o status)"],["Fila","API","Consumer entrega o job (concorrência 2)"],["API","Banco","job running; lê o talhão; janela = hoje − 6 meses"],["API","Worker","POST /process (geometria + janela, timeout WORKER_TIMEOUT_MS)"],["Worker","Fonte","list_scenes conforme DATA_MODE (stac, fixtures ou auto com fallback)"],["Fonte","Worker","Arquivos B04, B08 e SCL por data",true],["Worker","Worker","Pipeline: NDVI, máscara, estatísticas, zonas e alertas"],["Worker","Worker","Grava PNG, GeoTIFF e GeoJSON no volume /data"],["Worker","API","200 com source e scenes[]",true],["API","Banco","Transação: upsert de cenas, zonas e alertas; remove o que sumiu; needsReprocess"],["API","Banco","job completed com validScenes, discardedScenes e source"],["API","API","Notificação simulada: log notification.simulated (telefone ***)"],["Web","API","GET scenes, zones e alerts: desenha o mapa",false],["sep","Falha: erro de domínio (NO_OFFLINE_DATA, NO_VALID_SCENE, NOT_FOUND) vira failed na 1ª vez, sem retry"],["sep","Falha transitória (WORKER_TIMEOUT, WORKER_UNAVAILABLE, STAC_UNAVAILABLE, INTERNAL): reenfileira até 3 tentativas; failed só na última"]]}},"thresholds":[["Pixel inválido (SCL)","{3, 8, 9, 10}","worker/app/mask.py:INVALID_SCL"],["Descarte da cena","mais de 60% inválido","worker/app/mask.py:MAX_INVALID_PCT"],["Zonas","quantis 33 e 66","worker/app/zones.py:make_zones"],["Queda: mínimo de cenas","3 anteriores válidas","worker/app/alerts.py:MIN_PREV_SCENES"],["Queda média / alta","média \u003c 0,85 × base; alta \u003c 0,75 × base","worker/app/alerts.py:DROP_MEDIUM, DROP_HIGH"],["Mancha média / alta","maior mancha > 1 ha; alta > 3 ha","worker/app/alerts.py:PATCH_MEDIUM_HA, PATCH_HIGH_HA"],["Retries","3 tentativas, backoff exponencial de 5 s","api/src/jobs/jobs.service.ts:ATTEMPTS"],["Janela do histórico","hoje − 6 meses até hoje","api/src/jobs/jobs.processor.ts:handle"],["Upload","até 5 MB; .geojson, .json, .kml","api/src/common/geo.ts:MAX_FILE_BYTES"]],"erros":{"head":["Situação","O que o usuário vê","Código","Origem"],"rows":[["Criar fazenda com nome repetido","Já existe uma fazenda com esse nome","FARM_EXISTS 409","api/src/farms/farms.service.ts:create"],["Desenhar ou importar polígono inválido","Geometria inválida: envie um Polygon GeoJSON válido","INVALID_GEOMETRY 400","api/src/plots/plots.service.ts:assertValid"],["Arquivo ilegível, extensão errada ou acima de 5 MB","Mensagem de arquivo inválido; nada é criado","INVALID_FILE 400","api/src/common/geo.ts:parseGeoFile"],["Arquivo sem Polygon nem MultiPolygon","nenhum polígono encontrado no arquivo","NO_POLYGON 400","api/src/common/geo.ts:parseGeoFile"],["Processar com job ativo","Já existe um processamento em andamento para este talhão","JOB_IN_PROGRESS 409","api/src/jobs/jobs.service.ts:enqueueOrReuse"],["Talhão fora da região offline","Job failed: Sem dados offline para esta área","NO_OFFLINE_DATA 422 (sem retry)","worker/app/sources/fixtures.py:list_scenes"],["STAC fora do ar em stac","Job failed após 3 tentativas","STAC_UNAVAILABLE 503","worker/app/sources/stac.py:list_scenes"],["Todas as cenas com mais de 60% inválido","Sem cenas válidas no período","sem erro (cenas valid=false)","worker/app/mask.py:apply_mask"],["Zonas de data sem cena válida","Escolha outra data","SCENE_NOT_FOUND 404","api/src/zones/zones.service.ts"],["Geometria editada depois do processamento","Geometria alterada, reprocesse","needsReprocess (flag, não é erro)","api/src/plots/plots.repository.ts:update"],["Relatório sem cena válida","Talhão sem cena válida para gerar relatório","NO_VALID_SCENE 422","api/src/reports/reports.service.ts:enqueue"]]},"campo":{"head":["Momento","Escritório (desktop)","Campo (celular 375 px)"],"rows":[["Cadastro","Importa o arquivo GeoJSON/KML da propriedade inteira","Desenha o talhão com o dedo sobre o satélite"],["Acompanhar","Painel lateral com série temporal, p10/p90 e marcadores de alerta","Painel vira bottom sheet; timeline com play ocupa a base"],["Decidir","Compara datas e baixa o GeoJSON das zonas para a máquina de taxa variável","Toca na mancha: \"Ver no mapa\" enquadra e o NDVI do pixel aparece"],["Entregar","Gera e baixa o PDF","Abre o PDF para mostrar ao produtor"]]},"matriz":{"head":["Regra","Onde está implementada","Teste que cobre"],"rows":[["RN-01 NDVI e máscara SCL","worker/app/ndvi.py:ndvi; worker/app/mask.py:apply_mask","test_ndvi_mask.py: test_ndvi_values, test_zero_sum_is_nodata, test_scl_classes_masked, test_outside_polygon_ignored"],["RN-02 Descarte acima de 60%","worker/app/mask.py:apply_mask; worker/app/pipeline.py:process_plot","test_ndvi_mask.py: test_coverage_threshold; test_pipeline.py: test_scenes_and_invalid"],["RN-03 Estatísticas","worker/app/stats.py:scene_stats; api/src/jobs/result.persister.ts:persist","test_stats.py: test_stats, test_all_nodata"],["RN-04 Área em ha (geography)","api/src/plots/plots.repository.ts:insert/update (ST_Area)","api/test/integration/db.int-spec.ts (área calculada no SQL); plots.spec.ts (cria com areaHa)"],["RN-05 Desenho ou upload; MultiPolygon explodido","api/src/common/geo.ts:parseGeoFile; api/src/plots/plots.service.ts:importItems","api/test/plots-import.spec.ts (MultiPolygon, KML, INVALID_FILE, NO_POLYGON, transação)"],["RN-06 Histórico de 6 meses","api/src/jobs/jobs.processor.ts:handle","Sem teste da janela (lacuna). Indireto: jobs.spec.ts (processor)"],["RN-07 Zonas por quantis 33/66","worker/app/zones.py:make_zones; api/src/zones/zones.service.ts","test_zones.py; api/src/zones/zones.spec.ts (padrão, download, SCENE_NOT_FOUND)"],["RN-08 Alerta de queda","worker/app/alerts.py:drop_alert","test_alerts.py: test_drop_needs_three_scenes, test_drop_severity; test_pipeline.py: test_problem_plot_alerts"],["RN-09 Alerta de mancha","worker/app/alerts.py:historical_p10, patch_alert","test_alerts.py: test_patch_severity, test_patch_without_history, test_scattered_pixels_do_not_add_up"],["RN-10 Severidades","worker/app/alerts.py (DROP_*, PATCH_*)","test_alerts.py: test_drop_severity, test_patch_severity"],["RN-11 Notificação simulada","api/src/notifications/notifications.service.ts:notifyNew/whatsapp/emit","notifications.spec.ts; api/test/notifications-privacy.spec.ts"],["RN-12 Sem auth, tenant único","Ausência de guard em api/src/app.module.ts (decisão)","Sem teste (não há comportamento a verificar)"],["RN-13 DATA_MODE com fallback","worker/app/sources/__init__.py:list_scenes","test_sources.py: test_auto_falls_back, test_fixtures_mode_no_stac; test_stac.py"],["RN-14 Fixtures e bbox offline","worker/app/sources/fixtures.py:list_scenes","test_fixtures.py; test_sources.py: test_outside_bbox"],["RN-15 PDF e recomendações","worker/app/report.py:recommendations/build_pdf; api/src/reports/reports.service.ts:enqueue","test_report.py: test_direction, test_recommendations, test_pdf; reports.spec.ts"],["Job: fila, retry, 409","api/src/jobs/jobs.service.ts:enqueueOrReuse; jobs.processor.ts:handle","api/src/jobs/jobs.spec.ts (JOB_IN_PROGRESS, retry só na última, UnrecoverableError)"],["Persistência idempotente e needsReprocess","api/src/jobs/result.persister.ts:persist","api/test/integration/persister.int-spec.ts (2x mantém contagens; needsReprocess não zera)"],["Exclusão em cascata","api/src/farms/farms.service.ts:remove; FKs em api/prisma/schema.prisma","api/test/integration/farm-delete.int-spec.ts; db.int-spec.ts (cascata)"],["Telefone não persistido","api/src/notifications/notifications.service.ts:emit","api/test/notifications-privacy.spec.ts (log sem dígitos; schema sem coluna phone)"]]},"divergencias":["Estado do job: spec (RF-13) e código usam completed, não succeeded. Durante os retries o status continua running (não volta a queued); failed só na última tentativa ou em erro de domínio.","Alta de queda confirmada no código: média \u003c 0,75 × base (queda > 25%). Em exatamente 85% ou 75% a regra é estrita (sem alerta em 85%; média em 75%). Código ainda ignora base ≤ 0, o que a spec não cita.","STAC pré-filtra eo:cloud_cover \u003c 60 na busca (worker/app/sources/stac.py), além do descarte RN-02 por talhão. Não está na spec.","Fixtures ignoram a janela de datas e devolvem as 12 cenas (comentário P1 em fixtures.py). Por isso o histórico offline não é limitado a 6 meses.","RN-06 (janela de 6 meses) não tem teste dedicado.","Em modo stac/auto o polígono do talhão é enviado ao STAC público (intersects). A spec não trata isso como dado pessoal; ver aba LGPD."],"lgpd":{"head":["Dado","Onde é guardado","O que é logado","Exclusão"],"rows":[["Nome, município e UF da fazenda (pode identificar o produtor)","Postgres: tabela farm","Não é logado","DELETE /farms/:id (cascata)"],["Nome e contorno do talhão (localização da propriedade)","Postgres: plot (PostGIS)","Não é logado","DELETE /plots/:id ou da fazenda"],["NDVI, zonas, alertas e estatísticas derivados","Postgres (ndvi_scene, zone, alert) e /data/plots/{talhão}/{data}/","Só o alertId no log de notificação","Cascata + remoção das pastas após o commit"],["Relatórios PDF (nome do talhão, alertas)","Postgres: report e /data/reports/{talhão}/","Não é logado","Cascata + remoção da pasta"],["Jobs (errorCode, errorMessage, result)","Postgres: job","Erro interno loga stack no servidor, sem payload pessoal","Cascata"],["Telefone (opcional em POST /notifications/whatsapp)","Nunca persistido: sem coluna phone; só em memória na chamada","notification.simulated com phone \"***\"","Nada a apagar"],["Polígono enviado ao STAC público (modos stac e auto)","Não fica guardado por nós; sai da máquina na consulta","Aviso quando cai para fixtures","Use DATA_MODE=fixtures para nada sair"],["Conta, e-mail, cookies, localStorage","Não existem (sem auth, RN-12). Aviso em /privacidade","-","-"]]}};
+const NS='http://www.w3.org/2000/svg';
+const FONT='13px ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif';
+const cv=document.createElement('canvas').getContext('2d');
+function wrap(text,maxW,font){cv.font=font||FONT;const out=[];let cur='';for(const w of text.split(' ')){const t=cur?cur+' '+w:w;if(cv.measureText(t).width>maxW&&cur){out.push(cur);cur=w}else cur=t}if(cur)out.push(cur);return out}
+function el(tag,attrs,parent,text){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(text!=null)e.textContent=text;if(parent)parent.appendChild(e);return e}
+function defs(svg,id){const d=el('defs',{},svg);const m=el('marker',{id,viewBox:'0 0 10 10',refX:9,refY:5,markerWidth:7,markerHeight:7,orient:'auto-start-reverse'},d);el('path',{d:'M0,0 L10,5 L0,10 z',fill:'#1f2a1c'},m)}
+function txt(g,lines,cx,top,h,cls,lh){const y0=top+h/2-(lines.length-1)*lh/2;lines.forEach((l,i)=>el('text',{x:cx,y:y0+i*lh,'text-anchor':'middle','dominant-baseline':'central',class:cls},g,l))}
+
+function flow(f){
+  const W=360,MW=178,EX=216,EW=144,TX=197,LH=16,PADV=14,GAP=22;
+  const svg=el('svg',{viewBox:'0 0 '+W+' 100',class:'fl',role:'img','aria-label':f.title});
+  const ID='ar'+(++window.__n||(window.__n=1));defs(svg,ID);
+  const gE=el('g',{},svg),gN=el('g',{},svg);
+  let y=2;
+  f.steps.forEach((s,i)=>{
+    const lines=wrap(s.text,MW-22),h=lines.length*LH+PADV;
+    const ex=(s.exits||[]).map(e=>{const l=wrap(e.text,EW-14,'12px sans-serif');return{e,l,h:l.length*14+12}});
+    const exH=ex.reduce((a,b)=>a+b.h+6,-6);
+    const row=Math.max(h,exH);
+    const cls=s.k==='dec'?'n-dec':s.k==='end'?'n-end':'n-box';
+    if(s.k==='dec'){const k=12;el('polygon',{points:[[k,y],[MW-k,y],[MW,y+h/2],[MW-k,y+h],[k,y+h],[0,y+h/2]].map(p=>p.join(',')).join(' '),class:cls},gN)}
+    else el('rect',{x:0,y,width:MW,height:h,rx:s.k==='end'?h/2>20?14:h/2:7,class:cls},gN);
+    txt(gN,lines,MW/2,y,h,'t',LH);
+    const ny=y+h/2;let ey=y;
+    ex.forEach(o=>{
+      const cy=ey+o.h/2;
+      el('path',{d:'M'+MW+','+ny+' H'+TX+' V'+cy+' H'+EX,class:'ed','marker-end':'url(#'+ID+')'},gE);
+      el('rect',{x:EX,y:ey,width:EW,height:o.h,rx:6,class:'n-'+o.e.k},gN);
+      txt(gN,o.l,EX+EW/2,ey,o.h,"t sm",14);
+      el('text',{x:TX+(EX-TX)/2,y:cy-5,'text-anchor':'middle',class:'lb'},gE,o.e.label);
+      ey+=o.h+6;
+    });
+    if(i<f.steps.length-1)el('line',{x1:MW/2,y1:y+h,x2:MW/2,y2:y+row+GAP,class:'ed','marker-end':'url(#'+ID+')'},gE);
+    y+=row+GAP;
+  });
+  svg.setAttribute('viewBox','0 0 '+W+' '+(y-GAP+4));
+  return svg;
+}
+/* texto de exits usa 12px: ajusta classe */
+function fixExit(svg){}
+
+function seq(s){
+  const CW=130,M=65,A=s.actors,idx=Object.fromEntries(A.map((a,i)=>[a,i]));
+  const W=A.length*CW,X=a=>M+idx[a]*CW-M+CW/2;
+  const svg=el('svg',{width:W,viewBox:'0 0 '+W+' 100',role:'img','aria-label':s.title,style:'display:block'});
+  const SID='sa'+(++window.__n);defs(svg,SID);
+  const gL=el('g',{},svg),gM=el('g',{},svg);
+  A.forEach(a=>{el('rect',{x:X(a)-44,y:4,width:88,height:28,rx:6,class:'sq-h'},gM);el('text',{x:X(a),y:19,'text-anchor':'middle','dominant-baseline':'central',class:'sq-ht'},gM,a)});
+  let y=52;
+  for(const m of s.msgs){
+    if(m[0]==='sep'){
+      const ls=wrap(m[1],W-30,'11.5px sans-serif'),h=ls.length*14+10;
+      el('rect',{x:6,y:y-4,width:W-12,height:h,rx:5,class:'sep'},gM);
+      ls.forEach((l,i)=>el('text',{x:W/2,y:y-4+h/2+(i-(ls.length-1)/2)*14,'text-anchor':'middle','dominant-baseline':'central',class:'sq-t',style:'stroke:none'},gM,l));
+      y+=h+12;continue;
+    }
+    const [a,b,t,dash]=m,x1=X(a),x2=X(b);
+    if(a===b){
+      const ls=wrap(t,170,'11.5px sans-serif');
+      el('path',{d:`M${x1},${y} h30 v18 h-30`,class:'ed','marker-end':'url(#'+SID+')',fill:'none'},gM);
+      ls.forEach((l,i)=>el('text',{x:x1+36,y:y+6+i*13,class:'sq-t'},gM,l));
+      y+=Math.max(30,ls.length*13+14);continue;
+    }
+    const span=Math.abs(x2-x1),ls=wrap(t,Math.max(span-10,160),'11.5px sans-serif');
+    ls.forEach((l,i)=>el('text',{x:(x1+x2)/2,y:y+i*13,'text-anchor':'middle',class:'sq-t'},gM,l));
+    const ay=y+ls.length*13-4;
+    el('line',{x1,y1:ay,x2,y2:ay,class:'ed','marker-end':'url(#'+SID+')',...(dash?{'stroke-dasharray':'5 4'}:{})},gM);
+    y=ay+16;
+  }
+  A.forEach(a=>el('line',{x1:X(a),y1:32,x2:X(a),y2:y,class:'sq-l'},gL));
+  svg.setAttribute('viewBox','0 0 '+W+' '+(y+4));svg.setAttribute('height',y+4);
+  return svg;
+}
+
+const STATE=`<svg viewBox="0 0 560 226" class="fl" style="max-width:560px" role="img" aria-label="Estados do job"><defs><marker id="st" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#1f2a1c"/></marker></defs>
+<circle cx="22" cy="74" r="6" fill="#1f2a1c"/>
+<rect class="n-box" x="60" y="52" width="96" height="44" rx="8"/><text class="t" x="108" y="74" text-anchor="middle" dominant-baseline="central">queued</text>
+<rect class="n-box" x="230" y="52" width="96" height="44" rx="8"/><text class="t" x="278" y="74" text-anchor="middle" dominant-baseline="central">running</text>
+<rect class="n-ok" x="430" y="12" width="116" height="44" rx="8"/><text class="t" x="488" y="34" text-anchor="middle" dominant-baseline="central">completed</text>
+<rect class="n-err" x="430" y="132" width="116" height="44" rx="8"/><text class="t" x="488" y="154" text-anchor="middle" dominant-baseline="central">failed</text>
+<g class="ed" fill="none" marker-end="url(#st)"><path d="M28,74 H58" marker-end="url(#st)"/><path d="M156,74 H228" marker-end="url(#st)"/><path d="M326,62 L428,36" marker-end="url(#st)"/><path d="M326,86 L428,148" marker-end="url(#st)"/><path d="M258,52 C246,8 310,8 298,52" marker-end="url(#st)"/><path d="M108,96 V202 H488 V178" marker-end="url(#st)"/></g>
+<g class="lb" style="font-size:11px"><text x="20" y="100">cria o job</text><text x="192" y="64" text-anchor="middle">consumer</text><text x="372" y="40" text-anchor="middle">worker ok</text><text x="296" y="132" text-anchor="start">erro de domínio</text><text x="296" y="146" text-anchor="start">ou 3ª tentativa</text><text x="278" y="14" text-anchor="middle">erro transitório: retry (5 s, 10 s)</text><text x="300" y="196" text-anchor="middle">QUEUE_UNAVAILABLE (falha ao enfileirar)</text></g></svg>`;
+
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+const codeify=s=>esc(s).replace(/(\b[\w./-]+\.(?:py|ts|tsx|prisma|html)\b(?::[\w/()_*, ]+)?)/g,'<code>$1</code>');
+function tbl(t,codeCols){return '<div><table><thead><tr>'+t.head.map(h=>'<th>'+esc(h)+'</th>').join('')+'</tr></thead><tbody>'+t.rows.map(r=>'<tr>'+r.map((c,i)=>'<td data-l="'+esc(t.head[i])+'">'+(codeCols&&codeCols.includes(i)?codeify(c):esc(c))+'</td>').join('')+'</tr>').join('')+'</tbody></table></div>'}
+const card=(f,cap)=>{const d=document.createElement('div');d.className='box';d.innerHTML='<h3>'+esc(f.title)+'</h3>';d.appendChild(f.svg||flow(f));if(cap){const p=document.createElement('p');p.className='cap';p.textContent=cap;d.appendChild(p)}return d};
+const sec=(h,lead)=>{const s=document.createElement('section');s.className='sec';s.innerHTML='<h2>'+esc(h)+'</h2>'+(lead?'<p class="lead">'+esc(lead)+'</p>':'');return s};
+
+const TABS=[
+ ['jornada','Jornada',p=>{
+  let s=sec('A. Jornada de usabilidade','Produtor ou agrônomo. Ramos à direita: erro, vazio ou desvio, com o código que a API devolve.');
+  s.appendChild(card(DATA.flows.jornada));p.appendChild(s);
+  s=sec('Escritório e campo');s.insertAdjacentHTML('beforeend',tbl(DATA.campo));p.appendChild(s);
+  s=sec('Erros e estados vazios');s.insertAdjacentHTML('beforeend',tbl(DATA.erros,[3]));p.appendChild(s)}],
+ ['proc','Processamento',p=>{
+  let s=sec('B. Fluxo técnico','Web, API, fila BullMQ (Redis), worker HTTP, fonte de imagens e banco.');
+  s.insertAdjacentHTML('beforeend','<div class="box"><h3>'+esc(DATA.sequences.processamento.title)+'</h3><p class="hint">Diagrama largo: role para os lados.</p><div class="scroll" tabindex="0" role="region" aria-label="Diagrama de sequência"></div></div>');
+  s.querySelector('.scroll').appendChild(seq(DATA.sequences.processamento));p.appendChild(s);
+  s=sec('Fonte e persistência');const g=document.createElement('div');g.className='grid';g.append(card(DATA.flows.fonte),card(DATA.flows.persistencia));s.appendChild(g);p.appendChild(s)}],
+ ['regras','Regras',p=>{
+  const s=sec('C. Regras de negócio','Cada fluxo segue o código; limiares abaixo.');const g=document.createElement('div');g.className='grid';
+  g.append(card(DATA.flows.pipeline),card({title:'Estados do job',svg:(()=>{const d=document.createElement('div');d.innerHTML=STATE;return d.firstChild})()},'Retries: 3 tentativas, backoff exponencial de 5 s. Status continua running entre tentativas.'),card(DATA.flows.queda),card(DATA.flows.mancha));
+  s.appendChild(g);p.appendChild(s);
+  const t=sec('Limiares conferidos no código');t.insertAdjacentHTML('beforeend',tbl({head:['Regra','Valor','Constante'],rows:DATA.thresholds},[2]));p.appendChild(t)}],
+ ['matriz','Matriz',p=>{
+  let s=sec('D. Regra, implementação e teste','Arquivos de teste: worker/tests (pytest) e api/src, api/test (Jest).');s.insertAdjacentHTML('beforeend',tbl(DATA.matriz,[1,2]));p.appendChild(s);
+  s=sec('Divergências spec x código');s.insertAdjacentHTML('beforeend','<ul class="div">'+DATA.divergencias.map(d=>'<li>'+esc(d)+'</li>').join('')+'</ul>');p.appendChild(s)}],
+ ['lgpd','LGPD',p=>{
+  let s=sec('E. Mapa de LGPD','Quais dados existem, onde ficam, o que vai para o log e como apagar.');s.insertAdjacentHTML('beforeend',tbl(DATA.lgpd));p.appendChild(s);
+  s=sec('Exclusão em cascata');const g=document.createElement('div');g.className='grid';g.append(card(DATA.flows.exclusao));s.appendChild(g);p.appendChild(s)}],
+];
+const tabs=document.getElementById('tabs'),panels=document.getElementById('panels');
+function show(id){TABS.forEach(([k],i)=>{const on=k===id;tabs.children[i].setAttribute('aria-selected',on);tabs.children[i].tabIndex=on?0:-1;panels.children[i].hidden=!on});history.replaceState(null,'','#'+id)}
+TABS.forEach(([k,label,build],i)=>{
+  const b=document.createElement('button');b.role='tab';b.id='t-'+k;b.textContent=label;b.setAttribute('aria-controls','p-'+k);b.onclick=()=>show(k);
+  b.onkeydown=e=>{const d=e.key==='ArrowRight'?1:e.key==='ArrowLeft'?-1:0;if(d){const n=TABS[(i+d+TABS.length)%TABS.length][0];show(n);document.getElementById('t-'+n).focus()}};
+  tabs.appendChild(b);
+  const p=document.createElement('div');p.id='p-'+k;p.setAttribute('role','tabpanel');p.setAttribute('aria-labelledby','t-'+k);build(p);panels.appendChild(p);
+});
+show(TABS.some(t=>t[0]===location.hash.slice(1))?location.hash.slice(1):'jornada');
+const setMob=m=>{document.body.classList.toggle('mob',m);bd.setAttribute('aria-pressed',!m);bm.setAttribute('aria-pressed',m)};
+if(/mob/.test(location.search))setMob(true);
+bd.onclick=()=>setMob(false);bm.onclick=()=>setMob(true);
+</script>
+</body>
+</html>

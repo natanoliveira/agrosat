@@ -1,0 +1,30 @@
+[project]
+name = "agrosat-worker"
+version = "0.1.0"
+requires-python = ">=3.12"
+dependencies = [
+  "numpy", "rasterio", "shapely", "pillow", "fastapi", "uvicorn", "pystac-client",
+  "matplotlib", "reportlab",
+]
+
+[project.optional-dependencies]
+dev = ["pytest", "ruff", "mypy", "httpx", "pypdf", "pip-audit"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = [".", "scripts"]
+
+[tool.ruff]
+line-length = 100
+extend-exclude = [".venv"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP"]
+
+[tool.mypy]
+python_version = "3.12"
+ignore_missing_imports = true
+check_untyped_defs = true
+
+[tool.setuptools]
+packages = []
