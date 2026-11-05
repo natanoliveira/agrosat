@@ -26,7 +26,7 @@
 - **Shadow database do Prisma**: `prisma migrate dev` precisa de um banco sombra com PostGIS; usa o Postgres do compose (imagem `postgis/postgis`). Migration aplicada nunca é editada.
 - **ioredis explícito**: `ioredis` é dependência direta da API (`api/package.json`) em vez de depender da versão transitiva do BullMQ, para fixar a versão e o cliente usado na conexão.
 - **Portas configuráveis**: `API_HOST_PORT`, `WEB_HOST_PORT`, `POSTGRES_HOST_PORT`, `REDIS_HOST_PORT` e `WORKER_HOST_PORT` no compose, com os padrões 3001, 3005, 5432, 6379 e 8000. O worker publica só em 127.0.0.1. `NEXT_PUBLIC_API_URL` é embutida no build do web, então mudar `API_HOST_PORT` exige rebuild.
-- **Rampa NDVI de 4 paradas**: o PNG de NDVI usa uma rampa de cor com 4 paradas (do solo/baixo ao vigoroso), simples e legível sobre o satélite.
+- **Rampa NDVI de 4 paradas** (`worker/app/render.py`): NDVI ≤ 0,15 vermelho (215,48,39); 0,5 amarelo (254,224,80); 0,9 verde (26,152,80); interpolação linear entre as paradas, clip em [-0,2; 0,9]. Pixel sem dado fica transparente.
 - **Fixtures com dois focos de mancha**: o talhão problemático das fixtures tem dois focos de queda, para provar que só a maior mancha contígua conta no alerta (RN-09) e que manchas dispersas não somam.
 - **WORKER_URL local vs container**: no compose é `http://worker:8000`; rodando a API fora do Docker (`.env.example`) é `http://localhost:8000` (ou `WORKER_HOST_PORT`).
 - **Gancho `window.__map` só no e2e**: `MapView` só expõe o mapa quando `NEXT_PUBLIC_E2E=1` (build arg do web; `scripts/e2e.sh` liga, compose normal deixa vazio).
